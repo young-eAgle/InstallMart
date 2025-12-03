@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { documentApi } from "@/lib/api";
+import { Progress } from "@/components/ui/progress";
+
 
 interface Document {
   _id: string;
@@ -160,8 +162,12 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
   const progress = (uploadedRequiredDocs.length / requiredDocs.length) * 100;
   
   // Notify parent component about document verification status
-  const isFullyVerified = progress === 100 && verificationStatus === "verified";
-  onDocumentsVerified(isFullyVerified);
+  // Allow checkout when all required documents are uploaded
+  const isFullyVerified = progress === 100;
+  
+  useEffect(() => {
+    onDocumentsVerified(isFullyVerified);
+  }, [isFullyVerified, onDocumentsVerified]);
 
   return (
     <div className="space-y-6">
@@ -193,7 +199,12 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
             </Badge>
             {verificationStatus === "pending" && (
               <span className="text-xs text-muted-foreground">
-                Under review
+                Awaiting admin review
+              </span>
+            )}
+            {verificationStatus === "verified" && (
+              <span className="text-xs text-muted-foreground">
+                Approved
               </span>
             )}
           </div>
@@ -271,8 +282,10 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
               Documents Required
             </p>
             <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-              You must upload both sides of your CNIC to proceed with
-              checkout.
+              You must upload both sides of your CNIC to proceed with checkout.
+            </p>
+            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+              Your documents will be reviewed by an administrator after submission.
             </p>
           </div>
         </div>
@@ -327,18 +340,6 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
           ))}
         </div>
       )}
-    </div>
-  );
-};
-
-// Progress component (since it's used in the document upload section)
-const Progress = ({ value, className }: { value: number; className?: string }) => {
-  return (
-    <div className={`w-full bg-secondary rounded-full h-2 ${className}`}>
-      <div
-        className="bg-primary h-2 rounded-full transition-all duration-300"
-        style={{ width: `${value}%` }}
-      />
     </div>
   );
 };

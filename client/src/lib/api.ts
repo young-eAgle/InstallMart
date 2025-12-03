@@ -247,6 +247,15 @@ export const adminApi = {
     request<{ users: AuthUser[] }>(buildUrl("/api/admin/users"), {
       headers: { Authorization: `Bearer ${token}` },
     }),
+  updateUserRole: (token: string, userId: string, role: string) =>
+    request<AuthUser>(buildUrl(`/api/admin/users/${userId}/role`), {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+    }),
   orders: (token: string) =>
     request<{ orders: Order[] }>(buildUrl("/api/admin/orders"), {
       headers: { Authorization: `Bearer ${token}` },

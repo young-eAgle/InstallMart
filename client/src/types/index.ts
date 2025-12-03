@@ -17,7 +17,7 @@ export interface CartItem extends Pick<Product, "id" | "name" | "price" | "image
   quantity: number;
 }
 
-export type UserRole = "customer" | "admin";
+export type UserRole = "superadmin" | "admin" | "manager" | "customer" | "guest";
 
 export interface AuthUser {
   id: string;

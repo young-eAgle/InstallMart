@@ -8,6 +8,48 @@ export const getUsers = asyncHandler(async (_req, res) => {
   res.json({ users });
 });
 
+export const updateUserRole = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { role } = req.body;
+  
+  // Validate role
+  const validRoles = ["superadmin", "admin", "manager", "customer", "guest"];
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ message: "Invalid role" });
+  }
+  
+  // Prevent removing superadmin role from self
+  if (req.user.id === userId && req.user.role === "superadmin" && role !== "superadmin") {
+    return res.status(400).json({ message: "Cannot remove superadmin role from yourself" });
+  }
+  
+  // Role assignment restrictions based on current user's role
+  const currentUserRole = req.user.role;
+  
+  // Only superadmins can assign the superadmin role
+  if (role === "superadmin" && currentUserRole !== "superadmin") {
+    return res.status(403).json({ message: "Only superadmins can assign the superadmin role" });
+  }
+  
+  // Admins can only assign guest, customer, or manager roles (not superadmin or admin)
+  if (currentUserRole === "admin" && (role === "superadmin" || role === "admin")) {
+    return res.status(403).json({ message: "Admins can only assign guest, customer, or manager roles" });
+  }
+  
+  // Update user role
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { role },
+    { new: true, runValidators: true }
+  ).select("-password");
+  
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  
+  res.json(user);
+});
+
 export const getAdminStats = asyncHandler(async (_req, res) => {
   // Basic counts
   const totalOrders = await Order.countDocuments();

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { protect, requireAdmin } from "../middleware/auth.js";
-import { getUsers, getAdminStats } from "../controllers/adminController.js";
+import { getUsers, getAdminStats, updateUserRole } from "../controllers/adminController.js";
 import {
   getAllOrders,
   updateInstallmentStatus,
@@ -18,6 +18,7 @@ const router = Router();
 router.use(protect, requireAdmin);
 
 router.get("/users", getUsers);
+router.patch("/users/:userId/role", updateUserRole);
 router.get("/stats", getAdminStats);
 router.get("/orders", getAllOrders);
 router.patch("/orders/:orderId/installments/:installmentId", updateInstallmentStatus);

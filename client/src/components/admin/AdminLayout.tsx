@@ -24,7 +24,7 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
-  if (loading || !user || user.role !== "admin") {
+  if (loading || !user || (user.role !== "admin" && user.role !== "superadmin")) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
