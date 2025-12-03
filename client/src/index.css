@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
+All colors MUST be HSL.
+*/
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222 47% 11%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 222 47% 11%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 222 47% 11%;
+
+        --primary: 221 83% 53%;
+        --primary-foreground: 0 0% 100%;
+        --primary-glow: 221 83% 63%;
+
+        --secondary: 160 84% 39%;
+        --secondary-foreground: 0 0% 100%;
+
+        --muted: 210 40% 96%;
+        --muted-foreground: 215 16% 47%;
+
+        --accent: 160 84% 39%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 214 32% 91%;
+        --input: 214 32% 91%;
+        --ring: 221 83% 53%;
+
+        --radius: 0.75rem;
+
+        /* E-commerce specific tokens */
+        --gradient-primary: linear-gradient(
+            135deg,
+            hsl(221 83% 53%),
+            hsl(221 83% 63%)
+        );
+        --gradient-accent: linear-gradient(
+            135deg,
+            hsl(160 84% 39%),
+            hsl(160 84% 49%)
+        );
+        --gradient-hero: linear-gradient(
+            135deg,
+            hsl(221 83% 53%) 0%,
+            hsl(221 83% 63%) 50%,
+            hsl(160 84% 39%) 100%
+        );
+
+        --shadow-card:
+            0 4px 6px -1px hsl(221 83% 53% / 0.1),
+            0 2px 4px -1px hsl(221 83% 53% / 0.06);
+        --shadow-card-hover:
+            0 20px 25px -5px hsl(221 83% 53% / 0.15),
+            0 10px 10px -5px hsl(221 83% 53% / 0.1);
+        --shadow-glow: 0 0 40px hsl(221 83% 63% / 0.3);
+
+        --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dark {
+        --background: 222 47% 11%;
+        --foreground: 210 40% 98%;
+
+        --card: 217 33% 17%;
+        --card-foreground: 210 40% 98%;
+
+        --popover: 217 33% 17%;
+        --popover-foreground: 210 40% 98%;
+
+        --primary: 221 83% 53%;
+        --primary-foreground: 0 0% 100%;
+        --primary-glow: 221 83% 63%;
+
+        --secondary: 160 84% 39%;
+        --secondary-foreground: 0 0% 100%;
+
+        --muted: 217 33% 17%;
+        --muted-foreground: 215 20% 65%;
+
+        --accent: 160 84% 39%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 63% 31%;
+        --destructive-foreground: 210 40% 98%;
+
+        --border: 217 33% 17%;
+        --input: 217 33% 17%;
+        --ring: 221 83% 53%;
+
+        --shadow-card:
+            0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+        --shadow-card-hover:
+            0 20px 25px -5px hsl(0 0% 0% / 0.4),
+            0 10px 10px -5px hsl(0 0% 0% / 0.3);
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "cv11", "ss01";
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+}
+
+@layer utilities {
+    .gradient-primary {
+        background: var(--gradient-primary);
+    }
+
+    .gradient-accent {
+        background: var(--gradient-accent);
+    }
+
+    .gradient-hero {
+        background: var(--gradient-hero);
+    }
+
+    .shadow-card {
+        box-shadow: var(--shadow-card);
+    }
+
+    .shadow-card-hover {
+        box-shadow: var(--shadow-card-hover);
+    }
+
+    .shadow-glow {
+        box-shadow: var(--shadow-glow);
+    }
+
+    .transition-smooth {
+        transition: var(--transition-smooth);
+    }
+}
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.5s ease-in-out;
+}

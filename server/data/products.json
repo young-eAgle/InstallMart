@@ -1,0 +1,91 @@
+[
+  {
+    "name": "Samsung Galaxy S24 Ultra",
+    "description": "6.8\" AMOLED display, Snapdragon 8 Gen 3, 200MP camera, 12GB RAM, 512GB storage.",
+    "price": 489999,
+    "category": "smartphones",
+    "stock": 14,
+    "image_url": "https://images.unsplash.com/photo-1546054454-aa26e2b734c7",
+    "brand": "Samsung",
+    "tags": ["android", "flagship", "5g"],
+    "featured": true
+  },
+  {
+    "name": "Apple iPhone 16 Pro",
+    "description": "6.3\" Super Retina XDR display, A18 Pro chip, 256GB storage, Titanium build.",
+    "price": 564999,
+    "category": "smartphones",
+    "stock": 9,
+    "image_url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
+    "brand": "Apple",
+    "tags": ["ios", "flagship"],
+    "featured": true
+  },
+  {
+    "name": "Dell XPS 15 OLED",
+    "description": "15\" 3.5K OLED display, Intel Core Ultra 7, 32GB RAM, 1TB SSD, RTX 4050.",
+    "price": 589999,
+    "category": "laptops",
+    "stock": 7,
+    "image_url": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8",
+    "brand": "Dell",
+    "tags": ["laptop", "oled"],
+    "featured": true
+  },
+  {
+    "name": "Lenovo Legion Pro 7",
+    "description": "16\" 240Hz display, AMD Ryzen 9, 32GB RAM, 1TB SSD, RTX 4080 for ultimate gaming.",
+    "price": 639999,
+    "category": "gaming",
+    "stock": 5,
+    "image_url": "https://images.unsplash.com/photo-1516110833967-57818c7a060b",
+    "brand": "Lenovo",
+    "tags": ["gaming", "laptop"],
+    "featured": true
+  },
+  {
+    "name": "Sony Bravia XR 65\" Mini-LED",
+    "description": "4K HDR, XR Cognitive Processor, HDMI 2.1 for 120Hz gaming.",
+    "price": 429999,
+    "category": "tv",
+    "stock": 11,
+    "image_url": "https://images.unsplash.com/photo-1461151304267-38535e780c79",
+    "brand": "Sony",
+    "tags": ["home", "entertainment"],
+    "featured": false
+  },
+  {
+    "name": "PlayStation 5 Pro",
+    "description": "8K-ready console with improved ray tracing and 2TB SSD.",
+    "price": 299999,
+    "category": "gaming",
+    "stock": 18,
+    "image_url": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db",
+    "brand": "Sony",
+    "tags": ["console"],
+    "featured": false
+  },
+  {
+    "name": "Microsoft Surface Laptop 7",
+    "description": "13.8\" PixelSense Flow, Snapdragon X Elite, AI-enhanced performance.",
+    "price": 369999,
+    "category": "laptops",
+    "stock": 12,
+    "image_url": "https://images.unsplash.com/photo-1517430816045-df4b7de11d1d",
+    "brand": "Microsoft",
+    "tags": ["ai", "laptop"],
+    "featured": false
+  },
+  {
+    "name": "Asus ROG Ally X",
+    "description": "Portable gaming handheld with Ryzen Z1 Extreme and 1TB SSD.",
+    "price": 229999,
+    "category": "gaming",
+    "stock": 20,
+    "image_url": "https://images.unsplash.com/photo-1524592094714-0f0654e20314",
+    "brand": "Asus",
+    "tags": ["handheld", "gaming"],
+    "featured": false
+  }
+]
+

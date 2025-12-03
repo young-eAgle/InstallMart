@@ -1,0 +1,31 @@
+{
+  "name": "installmart-server",
+  "version": "1.0.0",
+  "description": "REST API for InstallMart built with Express and MongoDB",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed": "node scripts/seedProducts.js",
+    "seed:categories": "node scripts/seedCategories.js",
+    "seed:banners": "node scripts/seedBanners.js"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.11"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}

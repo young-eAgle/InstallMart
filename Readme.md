@@ -1,0 +1,1 @@
+customer should show categories
