@@ -13,6 +13,7 @@ import { AdminBanners } from "@/components/admin/AdminBanners";
 import { AdminCustomers } from "@/components/admin/AdminCustomers";
 import { AdminDocuments } from "@/components/admin/AdminDocuments";
 import { AdminPermissions } from "@/components/admin/AdminPermissions";
+import { AdminPayments } from "@/components/admin/AdminPayments";
 
 const AdminDashboard = () => {
   const { user, loading } = useAuth();
@@ -48,6 +49,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="banners">Banners</TabsTrigger>
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -74,6 +76,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="orders" className="space-y-4">
             <AdminOrders />
+          </TabsContent>
+
+          <TabsContent value="payments" className="space-y-4">
+            <AdminPayments />
           </TabsContent>
 
           <TabsContent value="customers" className="space-y-4">

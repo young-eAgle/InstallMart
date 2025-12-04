@@ -24,18 +24,13 @@ async function createSuperAdmin() {
     const password = process.env.SUPER_ADMIN_PASSWORD || "Admin@123";
     const fullName = process.env.SUPER_ADMIN_NAME || "Super Administrator";
 
-    // Hash the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create super admin user
+    // Create super admin user (password will be hashed by the pre-save hook)
     const superAdmin = new User({
       fullName,
       email,
-      password: hashedPassword,
+      password, // Plain text password, will be hashed by pre-save hook
       role: "superadmin",
     });
-
     await superAdmin.save();
     console.log("✅ Super Admin created successfully!");
     console.log(`Email: ${email}`);

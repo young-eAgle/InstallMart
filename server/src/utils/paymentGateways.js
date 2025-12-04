@@ -9,8 +9,9 @@ const JAZZCASH_CONFIG = {
   returnUrl:
     process.env.JAZZCASH_RETURN_URL || "http://localhost:5173/payment/callback",
   apiUrl:
-    process.env.JAZZCASH_API_URL ||
-    "https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/",
+    process.env.NODE_ENV === 'production' 
+      ? "https://jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/"
+      : "https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/",
 };
 
 // EasyPaisa Configuration
@@ -21,8 +22,9 @@ const EASYPAISA_CONFIG = {
     process.env.EASYPAISA_POSTBACK_URL ||
     "http://localhost:3000/api/payment/easypaisa/callback",
   apiUrl:
-    process.env.EASYPAISA_API_URL ||
-    "https://easypay-sandbox.easypaisa.com.pk/easypay/Index.jsf",
+    process.env.NODE_ENV === 'production'
+      ? "https://easypay.easypaisa.com.pk/easypay/Index.jsf"
+      : "https://easypay-sandbox.easypaisa.com.pk/easypay/Index.jsf",
 };
 
 // Generate JazzCash Secure Hash

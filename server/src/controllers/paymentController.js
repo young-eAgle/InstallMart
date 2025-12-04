@@ -13,6 +13,15 @@ import { sendEmail } from "../utils/mailer.js";
 export const initializePayment = asyncHandler(async (req, res) => {
   const { orderId, paymentMethod, installmentId } = req.body;
 
+  // Validate inputs
+  if (!orderId || !paymentMethod) {
+    return res.status(400).json({ message: "Order ID and payment method are required" });
+  }
+
+  if (!['jazzcash', 'easypaisa'].includes(paymentMethod)) {
+    return res.status(400).json({ message: "Invalid payment method" });
+  }
+
   const order = await Order.findById(orderId).populate("user");
   if (!order) {
     return res.status(404).json({ message: "Order not found" });
@@ -37,10 +46,14 @@ export const initializePayment = asyncHandler(async (req, res) => {
       return res.status(400).json({ message: "Installment already paid" });
     }
 
+    if (installment.status === "overdue") {
+      return res.status(400).json({ message: "Installment is overdue. Please contact support." });
+    }
+
     amount = installment.amount;
-    description = `Installment payment for order #${order.id}`;
+    description = `Installment payment for order #${order.id.substring(0, 6)}`;
   } else {
-    // Paying first installment
+    // Paying first pending installment
     const firstPending = order.installments.find(
       (inst) => inst.status === "pending",
     );
@@ -49,7 +62,12 @@ export const initializePayment = asyncHandler(async (req, res) => {
     }
 
     amount = firstPending.amount;
-    description = `First installment for order #${order.id}`;
+    description = `First installment for order #${order.id.substring(0, 6)}`;
+  }
+
+  // Validate amount
+  if (amount <= 0) {
+    return res.status(400).json({ message: "Invalid payment amount" });
   }
 
   const paymentData = {
@@ -62,20 +80,29 @@ export const initializePayment = asyncHandler(async (req, res) => {
 
   let paymentResponse;
 
-  if (paymentMethod === "jazzcash") {
-    paymentResponse = await createJazzCashPayment(paymentData);
-  } else if (paymentMethod === "easypaisa") {
-    paymentResponse = await createEasyPaisaPayment(paymentData);
-  } else {
-    return res.status(400).json({ message: "Invalid payment method" });
+  try {
+    if (paymentMethod === "jazzcash") {
+      paymentResponse = await createJazzCashPayment(paymentData);
+    } else if (paymentMethod === "easypaisa") {
+      paymentResponse = await createEasyPaisaPayment(paymentData);
+    }
+    
+    console.log(`Payment initialized for order ${orderId} using ${paymentMethod}`);
+    
+    res.json({
+      success: true,
+      ...paymentResponse,
+      orderId: order.id,
+      installmentId,
+    });
+  } catch (error) {
+    console.error(`Payment initialization failed for order ${orderId}:`, error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to initialize payment. Please try again.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
-
-  res.json({
-    success: true,
-    ...paymentResponse,
-    orderId: order.id,
-    installmentId,
-  });
 });
 
 // JazzCash callback handler
@@ -132,7 +159,7 @@ export const jazzCashCallback = asyncHandler(async (req, res) => {
     }
 
     return res.redirect(
-      `${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}&txnId=${verificationResult.transactionId}`,
+      `${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}&txnId=${verificationResult.transactionId}&amount=${verificationResult.amount}`,
     );
   } else {
     console.error(
@@ -203,6 +230,7 @@ export const easyPaisaCallback = asyncHandler(async (req, res) => {
       success: true,
       orderId,
       transactionId: verificationResult.transactionId,
+      amount: verificationResult.amount,
     });
   } else {
     console.error(

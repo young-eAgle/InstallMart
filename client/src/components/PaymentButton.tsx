@@ -60,23 +60,46 @@ export const PaymentButton = ({
       );
 
       if (response.success) {
-        // Create a form and submit it to the payment gateway
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = response.paymentUrl;
-        form.style.display = "none";
+        // For JazzCash, we submit a form directly
+        if (paymentMethod === "jazzcash") {
+          // Create a form and submit it to the payment gateway
+          const form = document.createElement("form");
+          form.method = "POST";
+          form.action = response.paymentUrl;
+          form.style.display = "none";
 
-        // Add all form fields
-        Object.entries(response.formData).forEach(([key, value]) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        });
+          // Add all form fields
+          Object.entries(response.formData).forEach(([key, value]) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+          });
 
-        document.body.appendChild(form);
-        form.submit();
+          document.body.appendChild(form);
+          form.submit();
+        } 
+        // For EasyPaisa, we redirect to the payment URL
+        else if (paymentMethod === "easypaisa") {
+          // Create a form for GET request
+          const form = document.createElement("form");
+          form.method = "GET";
+          form.action = response.paymentUrl;
+          form.style.display = "none";
+
+          // Add all form fields
+          Object.entries(response.formData).forEach(([key, value]) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+          });
+
+          document.body.appendChild(form);
+          form.submit();
+        }
       }
     } catch (error) {
       console.error("Payment initialization error:", error);

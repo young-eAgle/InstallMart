@@ -166,9 +166,9 @@ const Navbar = ({ onSearch }: NavbarProps) => {
                     <User className="mr-2 h-4 w-4" />
                     Profile Settings
                   </DropdownMenuItem>
-                  {user.role === "admin" && (
+                  {(user.role === "admin" || user.role === "superadmin") && (
                     <>
-                      <DropdownMenuSeparator />
+                      <Separator />
                       <DropdownMenuItem onClick={() => navigate("/admin")}>
                         <ShoppingBag className="mr-2 h-4 w-4" />
                         Admin Panel
@@ -367,7 +367,7 @@ const Navbar = ({ onSearch }: NavbarProps) => {
                     )}
                   </Button>
 
-                  {user.role === "admin" && (
+                  {(user.role === "admin" || user.role === "superadmin") && (
                     <>
                       <Separator />
                       <Button
@@ -534,7 +534,7 @@ export default Navbar;
 //                 >
 //                   Dashboard
 //                 </Link>
-//                 {user.role === "admin" && (
+//                 {(user.role === "admin" || user.role === "superadmin") && (
 //                   <Link
 //                     to="/admin"
 //                     className="text-sm font-medium hover:text-primary transition-smooth"
@@ -651,7 +651,7 @@ export default Navbar;
 //                   >
 //                     Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
 //                   </Link>
-//                   {user.role === "admin" && (
+//                   {(user.role === "admin" || user.role === "superadmin") && (
 //                     <Link
 //                       to="/admin"
 //                       className="text-sm font-medium hover:text-primary transition-smooth py-2"

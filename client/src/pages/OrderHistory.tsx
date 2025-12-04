@@ -4,7 +4,16 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Calendar, DollarSign, Eye } from "lucide-react";
+import { 
+  Package, 
+  Calendar, 
+  DollarSign, 
+  Eye, 
+  CheckCircle, 
+  AlertCircle,
+  Clock,
+  TrendingUp
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { orderApi } from "@/lib/api";
@@ -108,7 +117,7 @@ const OrderHistory = () => {
               <CardTitle className="text-sm font-medium">
                 Pending Installments
               </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -166,212 +175,220 @@ const OrderHistory = () => {
               </CardContent>
             </Card>
           ) : (
-            orders.map((order) => (
-              <Card key={order.id}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-lg">
-                          Order #{getOrderIdDisplay(order.id)}
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge
-                            className={
-                              statusStyles[order.status] || statusStyles.pending
-                            }
-                          >
-                            {order.status}
-                          </Badge>
-                          <Badge variant="outline" className="capitalize">
-                            {order.paymentMethod}
-                          </Badge>
-                          <Badge
-                            variant={
-                              order.paymentStatus === "verified"
-                                ? "default"
-                                : "outline"
-                            }
-                          >
-                            Payment {order.paymentStatus}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Order Date</p>
-                          <p className="font-medium">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Items</p>
-                          <p className="font-medium">{order.items.length}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Plan</p>
-                          <p className="font-medium">
-                            {order.installmentMonths} months
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Monthly</p>
-                          <p className="font-medium">
-                            Rs. {order.monthlyPayment.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pt-3 border-t">
-                        <div>
-                          <p className="text-muted-foreground">
-                            Payment Reference
-                          </p>
-                          <p className="font-medium">
-                            {order.paymentReference || "—"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Proof</p>
-                          {order.paymentProofUrl ? (
-                            <a
-                              href={order.paymentProofUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-medium text-primary underline-offset-2 hover:underline"
+            orders.map((order) => {
+              // Calculate payment statistics for this order
+              const paidInstallments = order.installments.filter(i => i.status === "paid").length;
+              const pendingInstallments = order.installments.filter(i => i.status === "pending").length;
+              const overdueInstallments = order.installments.filter(i => i.status === "overdue").length;
+              const totalInstallments = order.installments.length;
+              
+              // Get next due installment
+              const nextDueInstallment = order.installments.find(i => i.status === "pending") || 
+                                       order.installments.find(i => i.status === "overdue");
+              
+              return (
+                <Card key={order.id}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-semibold text-lg">
+                            Order #{getOrderIdDisplay(order.id)}
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge
+                              className={
+                                statusStyles[order.status] || statusStyles.pending
+                              }
                             >
-                              View proof
-                            </a>
-                          ) : (
-                            <p className="font-medium">Not uploaded</p>
+                              {order.status}
+                            </Badge>
+                            <Badge variant="outline" className="capitalize">
+                              {order.paymentMethod}
+                            </Badge>
+                            <Badge
+                              variant={
+                                order.paymentStatus === "verified"
+                                  ? "default"
+                                  : "outline"
+                              }
+                            >
+                              Payment {order.paymentStatus}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Order Date</p>
+                            <p className="font-medium">
+                              {new Date(order.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Items</p>
+                            <p className="font-medium">{order.items.length}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Plan</p>
+                            <p className="font-medium">
+                              {order.installmentMonths} months
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Monthly</p>
+                            <p className="font-medium">
+                              Rs. {order.monthlyPayment.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm pt-3 border-t">
+                          <div>
+                            <p className="text-muted-foreground">
+                              Payment Reference
+                            </p>
+                            <p className="font-medium">
+                              {order.paymentReference || "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Proof</p>
+                            {order.paymentProofUrl ? (
+                              <a
+                                href={order.paymentProofUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-medium text-primary underline-offset-2 hover:underline"
+                              >
+                                View proof
+                              </a>
+                            ) : (
+                              <p className="font-medium">Not uploaded</p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Progress</p>
+                            <p className="font-medium">
+                              {paidInstallments}/{totalInstallments} paid
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right space-y-2">
+                        <p className="text-2xl font-bold text-primary">
+                          Rs. {order.total.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {order.shippingAddress}
+                        </p>
+                        <Button 
+                          variant="ghost" 
+                          className="mt-2"
+                          onClick={() => navigate(`/payments`)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View All Payments
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 rounded-lg border bg-muted/30 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Installment Schedule
+                        </h4>
+                        <div className="flex items-center gap-4 text-xs">
+                          {nextDueInstallment && (
+                            <span className="text-muted-foreground">
+                              Next due:{" "}
+                              {new Date(nextDueInstallment.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            <span>{paidInstallments} paid</span>
+                          </div>
+                          {(pendingInstallments > 0 || overdueInstallments > 0) && (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3 w-3 text-amber-500" />
+                                <span>{pendingInstallments} pending</span>
+                              </div>
+                              {overdueInstallments > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <AlertCircle className="h-3 w-3 text-red-500" />
+                                  <span>{overdueInstallments} overdue</span>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="text-right space-y-2">
-                      <p className="text-2xl font-bold text-primary">
-                        Rs. {order.total.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.shippingAddress}
-                      </p>
-                      <Button variant="ghost" className="mt-2">
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Installments
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-lg border bg-muted/30 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-sm">
-                        Installment Schedule
-                      </h4>
-                      <span className="text-xs text-muted-foreground">
-                        Next due:{" "}
-                        {order.nextDueDate
-                          ? new Date(order.nextDueDate).toLocaleDateString()
-                          : "All paid"}
-                      </span>
-                    </div>
-                    <div className="grid gap-2">
-                      {order.installments.map((installment) => (
-                        <div
-                          key={installment._id}
-                          className={`flex flex-col md:flex-row md:items-center justify-between rounded-md border px-3 py-3 text-sm gap-3 ${
-                            installment.status === "overdue"
-                              ? "bg-destructive/5 border-destructive"
-                              : installment.status === "paid"
-                                ? "bg-green-50 border-green-200"
-                                : "bg-background"
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium">
-                              Due{" "}
-                              {new Date(
-                                installment.dueDate,
-                              ).toLocaleDateString()}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {installment.transactionId
-                                ? `Txn: ${installment.transactionId}`
-                                : "Awaiting payment"}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="font-semibold">
-                                Rs. {installment.amount.toLocaleString()}
+                      <div className="grid gap-2">
+                        {order.installments.map((installment) => (
+                          <div
+                            key={installment._id}
+                            className={`flex flex-col md:flex-row md:items-center justify-between rounded-md border px-3 py-3 text-sm gap-3 ${
+                              installment.status === "overdue"
+                                ? "bg-destructive/5 border-destructive"
+                                : installment.status === "paid"
+                                  ? "bg-green-50 border-green-200"
+                                  : "bg-background"
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                Due{" "}
+                                {new Date(
+                                  installment.dueDate,
+                                ).toLocaleDateString()}
                               </p>
-                              <p
-                                className={`text-xs font-medium ${
-                                  installment.status === "paid"
-                                    ? "text-green-600"
-                                    : installment.status === "overdue"
-                                      ? "text-destructive"
-                                      : "text-yellow-600"
-                                }`}
-                              >
-                                {installment.status.toUpperCase()}
-                                {installment.paidAt &&
-                                  ` · ${new Date(installment.paidAt).toLocaleDateString()}`}
+                              <p className="text-xs text-muted-foreground">
+                                {installment.transactionId
+                                  ? `Txn: ${installment.transactionId}`
+                                  : "Awaiting payment"}
                               </p>
                             </div>
 
-                            {installment.status !== "paid" && (
-                              <PaymentButton
-                                order={order}
-                                installmentId={installment._id}
-                                amount={installment.amount}
-                              />
-                            )}
-                          </div>
-                        </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="font-semibold">
+                                  Rs. {installment.amount.toLocaleString()}
+                                </p>
+                                <p
+                                  className={`text-xs font-medium ${
+                                    installment.status === "paid"
+                                      ? "text-green-600"
+                                      : installment.status === "overdue"
+                                        ? "text-destructive"
+                                        : "text-yellow-600"
+                                  }`}
+                                >
+                                  {installment.status.toUpperCase()}
+                                  {installment.paidAt &&
+                                    ` · ${new Date(installment.paidAt).toLocaleDateString()}`}
+                                </p>
+                              </div>
 
-                        // <div
-                        //   key={installment._id}
-                        //   className="flex flex-col md:flex-row md:items-center justify-between rounded-md border bg-background px-3 py-2 text-sm"
-                        // >
-                        //   <div>
-                        //     <p className="font-medium">
-                        //       Due{" "}
-                        //       {new Date(
-                        //         installment.dueDate,
-                        //       ).toLocaleDateString()}
-                        //     </p>
-                        //     <p className="text-xs text-muted-foreground">
-                        //       {installment.transactionId
-                        //         ? `Txn: ${installment.transactionId}`
-                        //         : "Awaiting payment"}
-                        //     </p>
-                        //   </div>
-                        //   <div className="text-right">
-                        //     <p className="font-semibold">
-                        //       Rs. {installment.amount.toLocaleString()}
-                        //     </p>
-                        //     <p
-                        //       className={`text-xs ${
-                        //         installment.status === "paid"
-                        //           ? "text-green-600"
-                        //           : installment.status === "overdue"
-                        //             ? "text-destructive"
-                        //             : "text-muted-foreground"
-                        //       }`}
-                        //     >
-                        //       {installment.status.toUpperCase()}
-                        //     </p>
-                        //   </div>
-                        // </div>
-                      ))}
+                              {installment.status !== "paid" && (
+                                <PaymentButton
+                                  order={order}
+                                  installmentId={installment._id}
+                                  amount={installment.amount}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </main>
