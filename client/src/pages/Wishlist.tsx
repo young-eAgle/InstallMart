@@ -21,14 +21,14 @@ const Wishlist = () => {
   }
 
   const handleAddToCart = (product: any) => {
-    const productId = product.id || product._id?.toString() || product._id;
     addToCart({
-      id: productId,
+      id: product.id,
       name: product.name,
       price: product.price,
       image_url: product.image_url,
       category: product.category,
-      quantity: 1,
+      // For wishlist items, we default to full payment (0 months)
+      installmentMonths: 0,
     });
   };
 
@@ -104,9 +104,7 @@ const Wishlist = () => {
                     size="icon"
                     className="absolute top-2 right-2"
                     onClick={() => {
-                      const productId =
-                        product.id || product._id?.toString() || product._id;
-                      removeFromWishlist(productId);
+                      removeFromWishlist(product.id);
                     }}
                   >
                     <Trash2 className="w-4 h-4" />

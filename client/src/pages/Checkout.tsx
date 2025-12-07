@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { orderApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Wallet, FileBadge2, AlertCircle } from "lucide-react";
@@ -20,7 +21,8 @@ const Checkout = () => {
   const { user, token, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [installmentMonths, setInstallmentMonths] = useState("6");
+  // Get installment months from cart items
+  const cartInstallmentMonths = items[0]?.installmentMonths || 0;
 
   const [formData, setFormData] = useState({
     address: "",
@@ -52,20 +54,19 @@ const Checkout = () => {
     return null;
   }
 
-  const monthlyPayment = Math.round(totalPrice / parseInt(installmentMonths));
+  const monthlyPayment = cartInstallmentMonths > 0 ? Math.round(totalPrice / cartInstallmentMonths) : totalPrice;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
     try {
-      // Simulate order processing
       await orderApi.create(
         {
           items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
           shippingAddress: formData.address,
           phone: formData.phone,
-          installmentMonths: parseInt(installmentMonths),
+          installmentMonths: cartInstallmentMonths,
           paymentMethod,
           paymentReference,
           paymentProofUrl: paymentProofUrl || undefined,
@@ -75,7 +76,9 @@ const Checkout = () => {
 
       toast({
         title: "Order placed successfully!",
-        description: `Monthly payment: Rs. ${monthlyPayment.toLocaleString()}`,
+        description: cartInstallmentMonths > 0 
+          ? `Installment plan: ${cartInstallmentMonths} months`
+          : "Full payment selected",
       });
 
       clearCart();
@@ -144,39 +147,7 @@ const Checkout = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Installment Plan</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Select Plan Duration</Label>
-                    <Select value={installmentMonths} onValueChange={setInstallmentMonths}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="3">3 Months</SelectItem>
-                        <SelectItem value="6">6 Months</SelectItem>
-                        <SelectItem value="12">12 Months</SelectItem>
-                        <SelectItem value="18">18 Months</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  <Card className="bg-accent/10">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-accent" />
-                        <span className="font-medium">Monthly Payment</span>
-                      </div>
-                      <span className="text-accent font-bold text-xl">
-                        Rs. {monthlyPayment.toLocaleString()}
-                      </span>
-                    </CardContent>
-                  </Card>
-                </CardContent>
-              </Card>
 
               <Card>
                 <CardHeader>
@@ -259,15 +230,10 @@ const Checkout = () => {
                       <span className="text-muted-foreground">Total</span>
                       <span className="font-medium">Rs. {totalPrice.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Plan Duration</span>
-                      <span className="font-medium">{installmentMonths} months</span>
-                    </div>
                   </div>
 
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Monthly</span>
-                    <span className="text-primary">Rs. {monthlyPayment.toLocaleString()}</span>
+                  <div className="text-center text-muted-foreground text-sm">
+                    <p>Installment plan selected during checkout</p>
                   </div>
 
                   <Button

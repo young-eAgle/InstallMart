@@ -85,7 +85,7 @@ const ProductCard = ({ id, name, price, image_url, stock, category }: ProductCar
           className="flex-1 gradient-accent"
           onClick={(e) => {
             e.stopPropagation();
-            addToCart({ id, name, price, image_url, category, quantity: 1 });
+            addToCart({ id, name, price, image_url, category, installmentMonths: 0 });
           }}
           disabled={stock === 0}
         >

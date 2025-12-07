@@ -15,6 +15,7 @@ export interface Product {
 
 export interface CartItem extends Pick<Product, "id" | "name" | "price" | "image_url" | "category"> {
   quantity: number;
+  installmentMonths?: number;
 }
 
 export type UserRole = "superadmin" | "admin" | "manager" | "customer" | "guest";

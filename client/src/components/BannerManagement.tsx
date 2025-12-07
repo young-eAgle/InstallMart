@@ -404,6 +404,7 @@ export const BannerManagement = () => {
                     <SelectItem value="hero">Hero</SelectItem>
                     <SelectItem value="promotional">Promotional</SelectItem>
                     <SelectItem value="secondary">Secondary</SelectItem>
+                    <SelectItem value="splash">Fullscreen Takeover</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

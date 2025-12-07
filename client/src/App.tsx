@@ -30,6 +30,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
 import PaymentCallback from "./pages/PaymentCallback";
 import PaymentCenter from "./pages/PaymentCenter";
+import { FullscreenTakeover } from "@/components/SplashScreen";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <FullscreenTakeover />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/products" element={<Products />} />

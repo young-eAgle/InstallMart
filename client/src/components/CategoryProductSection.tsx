@@ -17,7 +17,7 @@ interface Product {
   id: string;
   name: string;
   price: number;
-  image_url: string;
+  image_url?: string | null;
   stock: number;
   category: string;
   brand?: string;
@@ -283,16 +283,14 @@ export const CategoryProductSection = ({
                       disabled={product.stock <= 0}
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToCart(
-                          {
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            image_url: product.image_url,
-                            category: product.category,
-                          },
-                          1,
-                        );
+                        addToCart({
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          image_url: product.image_url,
+                          category: product.category,
+                          installmentMonths: 0,
+                        });
                       }}
                     >
                       <ShoppingCart className="w-4 h-4 mr-2" />

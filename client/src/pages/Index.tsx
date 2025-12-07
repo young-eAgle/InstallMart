@@ -4,7 +4,7 @@ import HeroBanner from "@/components/HeroBanner";
 import { PromotionalBanners } from "@/components/PromotionalBanners";
 import ProductCard from "@/components/ProductCard";
 import { PromoBanner } from "@/components/PromoBanner";
-import { CategoryShowcase } from "@/components/CategoryShowcase";
+import { CategoryShowcase } from "@/components/categoryShowcase";
 import { CategoryProductSection } from "@/components/CategoryProductSection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,11 +51,19 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <PromoBanner />
-      <Hero />
+      {/* <Hero /> */}
 
       {/* Hero Banner Carousel - Only show if banners exist */}
-      {heroBanners.length > 0 ? (
-        <HeroBanner banners={heroBanners} mode="component" />
+      {heroBanners && heroBanners.length > 0 ? (
+        <HeroBanner 
+          slides={heroBanners.map(banner => ({
+            id: banner.id,
+            desktopImage: banner.image_url,
+            mobileImage: banner.image_url,
+            alt: banner.title || 'Hero Banner',
+            link: banner.link
+          }))}
+        />
       ) : (
         <Hero />
       )}
@@ -117,10 +125,12 @@ const Index = () => {
       </section>
 
       {/* Promotional Banners */}
-      <PromotionalBanners banners={promoBanners} />
+      {promoBanners && promoBanners.length > 0 && (
+        <PromotionalBanners banners={promoBanners} />
+      )}
 
       {/* Category-wise Product Sections */}
-      {categories.slice(0, 4).map((category: any) => (
+      {categories && categories.slice(0, 4).map((category: any) => (
         <CategoryProductsWrapper key={category.id} category={category} />
       ))}
 

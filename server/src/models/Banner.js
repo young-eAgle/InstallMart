@@ -28,8 +28,9 @@ const bannerSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["hero", "secondary", "promotional"],
+      enum: ["hero", "secondary", "promotional", "splash"],
       default: "secondary",
+      description: "Banner type - splash is for fullscreen takeover banners",
     },
     position: {
       type: Number,
