@@ -7,7 +7,11 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 export const FullscreenTakeover = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(() => {
+    // Check if popup has already been shown in this session
+    const hasBeenShown = sessionStorage.getItem('splashShown');
+    return !hasBeenShown; // Show only if not shown before
+  });
 
   const { data } = useQuery({
     queryKey: ["banners", "splash"],
@@ -20,7 +24,11 @@ export const FullscreenTakeover = () => {
   useEffect(() => {
     if (takeoverBanners.length === 0) return;
 
-    const timer = setTimeout(() => setIsVisible(false), 8000);
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      // Mark as shown in sessionStorage
+      sessionStorage.setItem('splashShown', 'true');
+    }, 8000);
     return () => clearTimeout(timer);
   }, [takeoverBanners.length]);
 
@@ -51,7 +59,11 @@ export const FullscreenTakeover = () => {
     setCurrentIndex((prev) => (prev + 1) % takeoverBanners.length);
   };
 
-  const closeTakeover = () => setIsVisible(false);
+  const closeTakeover = () => {
+    setIsVisible(false);
+    // Mark as shown in sessionStorage
+    sessionStorage.setItem('splashShown', 'true');
+  };
 
   const handleBannerClick = (link?: string) => {
     if (link) window.location.href = link;

@@ -32,8 +32,8 @@ export const PaymentButton = ({
   const { token } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"jazzcash" | "easypaisa">(
-    "jazzcash",
+  const [paymentMethod, setPaymentMethod] = useState<"jazzcash" | "easypaisa" | "mock">(
+    "mock",
   );
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -60,8 +60,12 @@ export const PaymentButton = ({
       );
 
       if (response.success) {
+        // For mock payments, redirect directly to success page
+        if (paymentMethod === "mock") {
+          window.location.href = response.redirectUrl || `${window.location.origin}/payment/success?orderId=${order.id}&txnId=${response.transactionRef}&amount=${amount}`;
+        }
         // For JazzCash, we submit a form directly
-        if (paymentMethod === "jazzcash") {
+        else if (paymentMethod === "jazzcash") {
           // Create a form and submit it to the payment gateway
           const form = document.createElement("form");
           form.method = "POST";
@@ -138,9 +142,26 @@ export const PaymentButton = ({
           <RadioGroup
             value={paymentMethod}
             onValueChange={(value) =>
-              setPaymentMethod(value as "jazzcash" | "easypaisa")
+              setPaymentMethod(value as "jazzcash" | "easypaisa" | "mock")
             }
           >
+            <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
+              <RadioGroupItem value="mock" id="mock" />
+              <Label htmlFor="mock" className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-600 font-bold text-xs">MOCK</span>
+                  </div>
+                  <div>
+                    <p className="font-medium">Mock Payment</p>
+                    <p className="text-xs text-muted-foreground">
+                      Test payment simulation
+                    </p>
+                  </div>
+                </div>
+              </Label>
+            </div>
+
             <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
               <RadioGroupItem value="jazzcash" id="jazzcash" />
               <Label htmlFor="jazzcash" className="flex-1 cursor-pointer">

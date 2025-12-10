@@ -31,7 +31,8 @@ const computeNextDueDate = (installments) => {
   return next ? next.dueDate : null;
 };
 
-export const createOrder = asyncHandler(async (req, res) => {
+// Create order for guest users
+export const createGuestOrder = asyncHandler(async (req, res) => {
   const {
     items,
     installmentMonths,
@@ -40,6 +41,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     paymentMethod,
     paymentReference,
     paymentProofUrl,
+    customerInfo, // Guest customer information
   } = req.body;
 
   if (!items?.length) {
@@ -50,6 +52,9 @@ export const createOrder = asyncHandler(async (req, res) => {
   }
   if (!paymentMethod || !PAYMENT_METHODS.includes(paymentMethod)) {
     return res.status(400).json({ message: "Valid payment method is required" });
+  }
+  if (!customerInfo || !customerInfo.fullName || !customerInfo.email) {
+    return res.status(400).json({ message: "Customer information is required for guest orders" });
   }
 
   const productIds = items.map((item) => item.id);
@@ -77,8 +82,25 @@ export const createOrder = asyncHandler(async (req, res) => {
   const monthlyPayment = Math.round(total / months);
   const installments = buildInstallmentSchedule(total, months, new Date());
 
+  // Create a temporary guest user if one doesn't exist
+  let guestUser = await User.findOne({ 
+    email: customerInfo.email,
+    role: "guest" 
+  });
+
+  if (!guestUser) {
+    guestUser = await User.create({
+      fullName: customerInfo.fullName,
+      email: customerInfo.email,
+      password: "guest_" + Date.now(), // Temporary password
+      role: "guest",
+      phone: phone,
+      address: shippingAddress,
+    });
+  }
+
   const order = await Order.create({
-    user: req.user.id,
+    user: guestUser._id,
     items: normalizedItems,
     total,
     installmentMonths: months,
@@ -94,14 +116,14 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   // Send order confirmation email
   try {
-    const user = await User.findById(req.user.id);
-    if (user && user.email) {
-      await sendEmail(user.email, 'orderConfirmation', {
-        user,
-        order: order.toJSON()
-      });
-      console.log('Order confirmation email sent to:', user.email);
-    }
+    await sendEmail(customerInfo.email, 'orderConfirmation', {
+      user: {
+        fullName: customerInfo.fullName,
+        email: customerInfo.email
+      },
+      order: order.toJSON()
+    });
+    console.log('Order confirmation email sent to:', customerInfo.email);
   } catch (error) {
     console.error('Failed to send order confirmation email:', error.message);
     // Don't fail the order if email fails
@@ -110,87 +132,23 @@ export const createOrder = asyncHandler(async (req, res) => {
   res.status(201).json({ order });
 });
 
-export const getMyOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find({ user: req.user.id })
-    .sort({ createdAt: -1 })
+// Get guest order by ID
+export const getGuestOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  
+  const order = await Order.findById(orderId)
     .populate("items.product")
     .lean();
-  res.json({ orders });
-});
-
-export const getAllOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find()
-    .sort({ createdAt: -1 })
-    .populate("user", "fullName email role")
-    .lean();
-  res.json({ orders });
-});
-
-export const updateInstallmentStatus = asyncHandler(async (req, res) => {
-  const { orderId, installmentId } = req.params;
-  const { status, transactionId } = req.body;
-
-  if (!["pending", "paid", "overdue"].includes(status)) {
-    return res.status(400).json({ message: "Invalid status" });
-  }
-
-  const order = await Order.findById(orderId).populate('user');
+    
   if (!order) {
     return res.status(404).json({ message: "Order not found" });
   }
-
-  const installment = order.installments.id(installmentId);
-  if (!installment) {
-    return res.status(404).json({ message: "Installment not found" });
+  
+  // Check if the order belongs to a guest user
+  const user = await User.findById(order.user);
+  if (!user || user.role !== "guest") {
+    return res.status(403).json({ message: "Access denied" });
   }
-
-  const previousStatus = installment.status;
-
-  installment.status = status;
-  if (status === "paid") {
-    installment.paidAt = new Date();
-    installment.transactionId = transactionId || installment.transactionId;
-  }
-
-  order.nextDueDate = computeNextDueDate(order.installments);
-  await order.save();
-
-  // Send payment confirmation email if status changed to paid
-  if (previousStatus !== "paid" && status === "paid") {
-    try {
-      const user = order.user;
-      if (user && user.email) {
-        await sendEmail(user.email, 'paymentConfirmation', {
-          user,
-          installment: installment.toJSON(),
-          order: order.toJSON()
-        });
-        console.log('Payment confirmation email sent to:', user.email);
-      }
-    } catch (error) {
-      console.error('Failed to send payment confirmation email:', error.message);
-      // Don't fail the update if email fails
-    }
-  }
-
-  res.json({ order: order.toJSON() });
-});
-
-export const updatePaymentStatus = asyncHandler(async (req, res) => {
-  const { orderId } = req.params;
-  const { paymentStatus } = req.body;
-
-  if (!["pending", "verified", "rejected"].includes(paymentStatus)) {
-    return res.status(400).json({ message: "Invalid payment status" });
-  }
-
-  const order = await Order.findById(orderId);
-  if (!order) {
-    return res.status(404).json({ message: "Order not found" });
-  }
-
-  order.paymentStatus = paymentStatus;
-  await order.save();
-
-  res.json({ order: order.toJSON() });
+  
+  res.json({ order });
 });

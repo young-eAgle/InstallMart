@@ -69,32 +69,6 @@ const uploadRequest = async <T>(
   return res.json() as Promise<T>;
 };
 
-// // Helper for multipart/form-data requests (file uploads)
-// const uploadRequest = async <T>(
-//   path: string,
-//   formData: FormData,
-//   token?: string,
-// ) => {
-//   const headers: HeadersInit = {};
-//   if (token) {
-//     headers.Authorization = `Bearer ${token}`;
-//   }
-
-//   const res = await fetch(path, {
-//     method: "POST",
-//     body: formData,
-//     headers,
-//   });
-
-//   if (!res.ok) {
-//     const errorBody = await res.json().catch(() => ({}));
-//     const message = errorBody.message || "Upload failed";
-//     throw new Error(message);
-//   }
-
-//   return res.json() as Promise<T>;
-// };
-
 export const productApi = {
   list: (params?: {
     category?: string;
@@ -139,19 +113,6 @@ export const productApi = {
     request<{ product: Product }>(buildUrl(`/api/products/${id}`)),
 };
 
-// export const productApi = {
-//   list: (params?: { category?: string; search?: string; featured?: boolean }) =>
-//     request<{ products: Product[] }>(
-//       buildUrl("/api/products", {
-//         category: params?.category,
-//         search: params?.search,
-//         featured: params?.featured ? "true" : undefined,
-//       }),
-//     ),
-//   get: (id: string) =>
-//     request<{ product: Product }>(buildUrl(`/api/products/${id}`)),
-// };
-
 export const authApi = {
   register: (payload: { fullName: string; email: string; password: string }) =>
     request<{ token: string; user: AuthUser }>(buildUrl("/api/auth/register"), {
@@ -171,6 +132,7 @@ export const authApi = {
     }),
 };
 
+// Updated order API to support guest orders and return order ID
 export const orderApi = {
   create: (
     payload: {
@@ -181,22 +143,40 @@ export const orderApi = {
       paymentMethod: PaymentMethod;
       paymentReference?: string;
       paymentProofUrl?: string;
+      customerInfo?: {
+        fullName: string;
+        email: string;
+      }; // Optional for guest orders
     },
-    token: string,
-  ) =>
-    request<{ order: Order }>(buildUrl("/api/orders"), {
+    token?: string, // Optional token for authenticated users
+  ) => {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+    
+    // Add authorization header only if token is provided
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Use different endpoint for guest orders
+    const endpoint = token ? "/api/orders" : "/api/orders/guest";
+    
+    return request<{ order: Order }>(buildUrl(endpoint), {
       method: "POST",
       body: JSON.stringify(payload),
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+      headers,
+    });
+  },
   mine: (token: string) =>
     request<{ orders: Order[] }>(buildUrl("/api/orders/mine"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     }),
+  // Get guest order by ID
+  getGuestOrder: (orderId: string) =>
+    request<{ order: Order }>(buildUrl(`/api/orders/guest/${orderId}`)),
 };
 
 // NEW: Wishlist API
@@ -325,12 +305,6 @@ export const adminApi = {
         },
       },
     ),
-
-  // deleteProduct: (id: string, token: string) =>
-  //   request<void>(buildUrl(`/api/admin/products/${id}`), {
-  //     method: "DELETE",
-  //     headers: { Authorization: `Bearer ${token}` },
-  //   }),
 };
 
 export const categoryApi = {
@@ -388,92 +362,14 @@ export const categoryApi = {
         },
       },
     ),
-
-  // delete: (id: string, token: string) =>
-  //   request<void>(buildUrl(`/api/categories/${id}`), {
-  //     method: "DELETE",
-  //     headers: { Authorization: `Bearer ${token}` },
-  //   }),
-
-  addSubcategory: (id: string, payload: any, token: string) =>
-    request<{ category: any }>(
-      buildUrl(`/api/categories/${id}/subcategories`),
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    ),
-
-  updateSubcategory: (
-    id: string,
-    subcategoryId: string,
-    payload: any,
-    token: string,
-  ) =>
-    request<{ category: any }>(
-      buildUrl(`/api/categories/${id}/subcategories/${subcategoryId}`),
-      {
-        method: "PUT",
-        body: JSON.stringify(payload),
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    ),
-
-  deleteSubcategory: (id: string, subcategoryId: string, token: string) =>
-    request<{ category: any }>(
-      buildUrl(`/api/categories/${id}/subcategories/${subcategoryId}`),
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    ),
 };
-
-// // Category API
-// export const categoryApi = {
-//   list: () => request<{ categories: any[] }>(buildUrl("/api/categories")),
-
-//   get: (slug: string) =>
-//     request<{ category: any }>(buildUrl(`/api/categories/${slug}`)),
-
-//   create: (payload: any, token: string) =>
-//     request<{ category: any }>(buildUrl("/api/categories"), {
-//       method: "POST",
-//       body: JSON.stringify(payload),
-//       headers: { Authorization: `Bearer ${token}` },
-//     }),
-
-//   update: (id: string, payload: any, token: string) =>
-//     request<{ category: any }>(buildUrl(`/api/categories/${id}`), {
-//       method: "PUT",
-//       body: JSON.stringify(payload),
-//       headers: { Authorization: `Bearer ${token}` },
-//     }),
-
-//   delete: (id: string, token: string) =>
-//     request<void>(buildUrl(`/api/categories/${id}`), {
-//       method: "DELETE",
-//       headers: { Authorization: `Bearer ${token}` },
-//     }),
-
-//   addSubcategory: (id: string, payload: any, token: string) =>
-//     request<{ category: any }>(
-//       buildUrl(`/api/categories/${id}/subcategories`),
-//       {
-//         method: "POST",
-//         body: JSON.stringify(payload),
-//         headers: { Authorization: `Bearer ${token}` },
-//       },
-//     ),
-// };
 
 // Payment API
 export const paymentApi = {
   initialize: (
     payload: {
       orderId: string;
-      paymentMethod: "jazzcash" | "easypaisa";
+      paymentMethod: "jazzcash" | "easypaisa" | "mock";
       installmentId?: string;
     },
     token: string,
@@ -485,6 +381,7 @@ export const paymentApi = {
       transactionRef: string;
       orderId: string;
       installmentId?: string;
+      redirectUrl?: string;
     }>(buildUrl("/api/payment/initialize"), {
       method: "POST",
       body: JSON.stringify(payload),
@@ -580,52 +477,36 @@ export const documentApi = {
       documents: any[];
       verificationStatus: string;
       documentsVerified: boolean;
-    }>(buildUrl("/api/documents/my-documents"), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    }>(buildUrl("/api/documents/my"), {
+      headers: { Authorization: `Bearer ${token}` },
     }),
 
   // User - upload document
   upload: (formData: FormData, token: string) =>
-    uploadRequest<{
-      message: string;
-      document: any;
-    }>(buildUrl("/api/documents/upload"), formData, token),
+    uploadRequest<{ message: string; document: any }>(
+      buildUrl("/api/documents/upload"),
+      formData,
+      token,
+    ),
 
   // User - delete document
   delete: (documentId: string, token: string) =>
-    request<{ message: string }>(buildUrl(`/api/documents/${documentId}`), {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
+    request<{ message: string }>(
+      buildUrl(`/api/documents/${documentId}`),
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       },
-    }),
+    ),
 
-  // Admin - get all users with documents
-  getAllUserDocuments: (token: string) =>
-    request<{ users: any[] }>(buildUrl("/api/documents/all"), {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+  // Guest - upload document
+  uploadGuest: (formData: FormData) =>
+    uploadRequest<{ success: boolean; message: string; document?: any }>(
+      buildUrl("/api/documents/guest/upload"),
+      formData,
+    ),
 
-  // Admin - update document status
-  updateStatus: (
-    userId: string,
-    documentId: string,
-    payload: { status: string; rejectionReason?: string },
-    token: string,
-  ) =>
-    request<{
-      message: string;
-      user: { id: string; verificationStatus: string; documentsVerified: boolean };
-    }>(buildUrl(`/api/documents/${userId}/${documentId}/status`), {
-      method: "PUT",
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+  // Guest - get documents by order ID
+  getGuestDocuments: (orderId: string) =>
+    request<{ documents: any[] }>(buildUrl(`/api/documents/guest/${orderId}`)),
 };

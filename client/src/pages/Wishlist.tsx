@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ShoppingCart, Trash2, Package } from "lucide-react";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Wishlist = () => {
@@ -12,25 +11,12 @@ const Wishlist = () => {
   const { user } = useAuth();
   const { wishlist, removeFromWishlist, clearWishlist, loading } =
     useWishlist();
-  const { addToCart } = useCart();
 
   // Redirect if not logged in
   if (!user) {
     navigate("/auth");
     return null;
   }
-
-  const handleAddToCart = (product: any) => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image_url: product.image_url,
-      category: product.category,
-      // For wishlist items, we default to full payment (0 months)
-      installmentMonths: 0,
-    });
-  };
 
   // const handleAddToCart = (product: any) => {
   //   addToCart({
@@ -90,7 +76,7 @@ const Wishlist = () => {
             {wishlist.map((product) => (
               <Card
                 key={product.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow"
+                className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full"
               >
                 <div className="relative">
                   <img
@@ -110,6 +96,18 @@ const Wishlist = () => {
                     <Trash2 className="w-4 h-4" />
                   </Button>
 
+                  {/* Quick View Overlay */}
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 hover:opacity-100 transition-all duration-300 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/product/${product.id}`);
+                    }}
+                  >
+                    <Button variant="secondary" size="sm">
+                      Quick View
+                    </Button>
+                  </div>
+
                   {product.stock <= 0 && (
                     <div className="absolute bottom-2 left-2 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-semibold">
                       Out of Stock
@@ -123,9 +121,9 @@ const Wishlist = () => {
                   )}
                 </div>
 
-                <CardContent className="p-4">
+                <CardContent className="p-4 flex-grow flex flex-col">
                   <h3
-                    className="font-semibold text-lg mb-1 line-clamp-2 cursor-pointer hover:text-primary"
+                    className="font-semibold text-lg mb-1 line-clamp-2 cursor-pointer hover:text-primary flex-grow"
                     onClick={() => navigate(`/product/${product.id}`)}
                   >
                     {product.name}
@@ -137,26 +135,18 @@ const Wishlist = () => {
                     </p>
                   )}
 
-                  <p className="text-2xl font-bold text-primary mb-4">
+                  <p className="text-2xl font-bold text-primary mb-4 mt-auto">
                     Rs. {product.price.toLocaleString()}
                   </p>
 
-                  <div className="flex gap-2">
+                  <div className="mt-auto">
                     <Button
-                      className="flex-1"
+                      className="w-full gradient-accent py-5 font-semibold"
                       disabled={product.stock <= 0}
-                      onClick={() => handleAddToCart(product)}
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="icon"
                       onClick={() => navigate(`/product/${product.id}`)}
                     >
-                      <Package className="w-4 h-4" />
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      {product.stock > 0 ? "Order Now" : "Out of Stock"}
                     </Button>
                   </div>
                 </CardContent>

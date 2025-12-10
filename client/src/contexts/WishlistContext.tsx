@@ -17,7 +17,11 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
-  const [wishlist, setWishlist] = useState<Product[]>([]);
+  const [wishlist, setWishlist] = useState<Product[]>(() => {
+    // Load from localStorage for guest users
+    const saved = localStorage.getItem('guest_wishlist');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [loading, setLoading] = useState(false);
   const { user, token } = useAuth();
   const { toast } = useToast();
@@ -26,10 +30,16 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (user && token) {
       loadWishlist();
-    } else {
-      setWishlist([]);
-    }
+    } 
+    // For guests, we keep the localStorage wishlist
   }, [user, token]);
+
+  // Update localStorage when wishlist changes for guests
+  useEffect(() => {
+    if (!user && !token) {
+      localStorage.setItem('guest_wishlist', JSON.stringify(wishlist));
+    }
+  }, [wishlist, user, token]);
 
   const loadWishlist = async () => {
     if (!token) return;
@@ -37,7 +47,28 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const { wishlist: data } = await wishlistApi.get(token);
-      setWishlist(data.products || []);
+      
+      // Check if there's a guest wishlist to merge
+      const guestWishlist = localStorage.getItem('guest_wishlist');
+      if (guestWishlist) {
+        // Merge guest wishlist with user wishlist
+        const parsedGuestWishlist = JSON.parse(guestWishlist);
+        const mergedWishlist = [...data.products || [], ...parsedGuestWishlist];
+        
+        // Remove duplicates based on product ID
+        const uniqueWishlist = mergedWishlist.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        
+        // Update the wishlist in the database
+        // Note: This would require a bulk add API endpoint
+        setWishlist(uniqueWishlist);
+        
+        // Clear guest wishlist
+        localStorage.removeItem('guest_wishlist');
+      } else {
+        setWishlist(data.products || []);
+      }
     } catch (error) {
       console.error("Failed to load wishlist:", error);
     } finally {
@@ -47,10 +78,13 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
 
   const addToWishlist = async (product: Product) => {
     if (!token) {
+      // Handle guest wishlist
+      const updatedWishlist = [...wishlist, product];
+      setWishlist(updatedWishlist);
+      localStorage.setItem('guest_wishlist', JSON.stringify(updatedWishlist));
       toast({
-        title: "Login Required",
-        description: "Please login to add items to wishlist",
-        variant: "destructive",
+        title: "Added to Wishlist",
+        description: `${product.name} has been added to your wishlist`,
       });
       return;
     }
@@ -72,7 +106,17 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const removeFromWishlist = async (productId: string) => {
-    if (!token) return;
+    if (!token) {
+      // Handle guest wishlist
+      const updatedWishlist = wishlist.filter(product => product.id !== productId);
+      setWishlist(updatedWishlist);
+      localStorage.setItem('guest_wishlist', JSON.stringify(updatedWishlist));
+      toast({
+        title: "Removed from Wishlist",
+        description: "Item has been removed from your wishlist",
+      });
+      return;
+    }
 
     try {
       const { wishlist: data } = await wishlistApi.remove(productId, token);
@@ -91,7 +135,16 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const clearWishlist = async () => {
-    if (!token) return;
+    if (!token) {
+      // Handle guest wishlist
+      setWishlist([]);
+      localStorage.removeItem('guest_wishlist');
+      toast({
+        title: "Wishlist Cleared",
+        description: "All items have been removed from your wishlist",
+      });
+      return;
+    }
 
     try {
       await wishlistApi.clear(token);

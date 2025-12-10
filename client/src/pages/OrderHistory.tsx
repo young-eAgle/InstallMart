@@ -12,7 +12,10 @@ import {
   CheckCircle, 
   AlertCircle,
   Clock,
-  TrendingUp
+  TrendingUp,
+  FileText,
+  Truck,
+  CreditCard
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -23,6 +26,13 @@ const statusStyles: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   approved: "bg-green-500/10 text-green-500 border-green-500/20",
   shipped: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+};
+
+// New status styles for installment statuses
+const installmentStatusStyles: Record<string, string> = {
+  paid: "bg-green-500/10 text-green-500 border-green-500/20",
+  pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  overdue: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
 const OrderHistory = () => {
@@ -186,6 +196,11 @@ const OrderHistory = () => {
               const nextDueInstallment = order.installments.find(i => i.status === "pending") || 
                                        order.installments.find(i => i.status === "overdue");
               
+              // Calculate progress percentage
+              const progressPercentage = totalInstallments > 0 
+                ? Math.round((paidInstallments / totalInstallments) * 100) 
+                : 0;
+              
               return (
                 <Card key={order.id}>
                   <CardContent className="p-6">
@@ -243,7 +258,7 @@ const OrderHistory = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm pt-3 border-t">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm pt-3 border-t">
                           <div>
                             <p className="text-muted-foreground">
                               Payment Reference
@@ -273,6 +288,14 @@ const OrderHistory = () => {
                               {paidInstallments}/{totalInstallments} paid
                             </p>
                           </div>
+                          <div>
+                            <p className="text-muted-foreground">Next Payment</p>
+                            <p className="font-medium">
+                              {nextDueInstallment 
+                                ? `${new Date(nextDueInstallment.dueDate).toLocaleDateString()} (${nextDueInstallment.status})`
+                                : "All paid"}
+                            </p>
+                          </div>
                         </div>
                       </div>
 
@@ -291,6 +314,20 @@ const OrderHistory = () => {
                           <Eye className="w-4 h-4 mr-2" />
                           View All Payments
                         </Button>
+                      </div>
+                    </div>
+
+                    {/* Progress bar for installment completion */}
+                    <div className="mt-4">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Installment Progress</span>
+                        <span className="font-medium">{progressPercentage}%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full" 
+                          style={{ width: `${progressPercentage}%` }}
+                        ></div>
                       </div>
                     </div>
 
@@ -328,49 +365,60 @@ const OrderHistory = () => {
                         </div>
                       </div>
                       <div className="grid gap-2">
-                        {order.installments.map((installment) => (
+                        {order.installments.map((installment, index) => (
                           <div
                             key={installment._id}
-                            className={`flex flex-col md:flex-row md:items-center justify-between rounded-md border px-3 py-3 text-sm gap-3 ${
+                            className={`flex flex-col md:flex-row md:items-center justify-between rounded-md border px-4 py-3 text-sm gap-3 ${
                               installment.status === "overdue"
                                 ? "bg-destructive/5 border-destructive"
                                 : installment.status === "paid"
                                   ? "bg-green-50 border-green-200"
-                                  : "bg-background"
+                                  : "bg-background border-muted"
                             }`}
                           >
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                Due{" "}
-                                {new Date(
-                                  installment.dueDate,
-                                ).toLocaleDateString()}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {installment.transactionId
-                                  ? `Txn: ${installment.transactionId}`
-                                  : "Awaiting payment"}
-                              </p>
+                            <div className="flex items-center gap-3">
+                              <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium 
+                                ${installment.status === "paid" 
+                                  ? "bg-green-500 text-white" 
+                                  : installment.status === "overdue" 
+                                    ? "bg-destructive text-white" 
+                                    : "bg-muted text-foreground"}`}>
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium">
+                                  Payment #{index + 1} - Due {" "}
+                                  {new Date(installment.dueDate).toLocaleDateString()}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {installment.transactionId
+                                    ? `Txn: ${installment.transactionId}`
+                                    : "Awaiting payment"}
+                                </p>
+                                {installment.paidAt && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Paid: {new Date(installment.paidAt).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
                             </div>
 
                             <div className="flex items-center gap-4">
-                              <div className="text-right">
+                              <div className="text-right min-w-[120px]">
                                 <p className="font-semibold">
                                   Rs. {installment.amount.toLocaleString()}
                                 </p>
-                                <p
-                                  className={`text-xs font-medium ${
-                                    installment.status === "paid"
-                                      ? "text-green-600"
-                                      : installment.status === "overdue"
-                                        ? "text-destructive"
-                                        : "text-yellow-600"
-                                  }`}
+                                <Badge 
+                                  className={`mt-1 ${installmentStatusStyles[installment.status] || ''}`}
+                                  variant="outline"
                                 >
                                   {installment.status.toUpperCase()}
-                                  {installment.paidAt &&
-                                    ` · ${new Date(installment.paidAt).toLocaleDateString()}`}
-                                </p>
+                                </Badge>
+                                {installment.paidAt && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Paid: {new Date(installment.paidAt).toLocaleDateString()}
+                                  </p>
+                                )}
                               </div>
 
                               {installment.status !== "paid" && (
@@ -383,6 +431,20 @@ const OrderHistory = () => {
                             </div>
                           </div>
                         ))}
+                      </div>
+                      <div className="mt-4 pt-4 border-t text-sm">
+                        <div className="flex justify-between font-medium">
+                          <span>Total Amount:</span>
+                          <span>Rs. {order.total.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Paid So Far:</span>
+                          <span>Rs. {(paidInstallments * order.monthlyPayment).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-primary font-semibold mt-1">
+                          <span>Remaining:</span>
+                          <span>Rs. {((totalInstallments - paidInstallments) * order.monthlyPayment).toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

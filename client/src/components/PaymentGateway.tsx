@@ -40,6 +40,13 @@ const daysUntil = (value: string) => {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 };
 
+// Status styles for installments
+const installmentStatusStyles: Record<string, string> = {
+  paid: "bg-green-500/10 text-green-500 border-green-500/20",
+  pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  overdue: "bg-destructive/10 text-destructive border-destructive/20",
+};
+
 export const PaymentGateway = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
@@ -312,6 +319,18 @@ export const PaymentGateway = () => {
                       </div>
                     </div>
 
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <Badge 
+                        className={`${installmentStatusStyles[installment.status] || ''}`}
+                        variant="outline"
+                      >
+                        {installment.status.toUpperCase()}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        Payment #{installment.order?.installments.findIndex(i => i._id === installment._id)! + 1} of {installment.order?.installments.length}
+                      </span>
+                    </div>
+
                     <div className="flex gap-2">
                       <PaymentButton
                         order={installment.order}
@@ -365,33 +384,44 @@ export const PaymentGateway = () => {
                 const orderId = installment.order?.id
                   ? installment.order.id.slice(-6)
                   : "N/A";
+                const orderDate = installment.order?.createdAt
+                  ? new Date(installment.order.createdAt).toLocaleDateString()
+                  : "N/A";
 
                 return (
                   <div
                     key={installment._id}
-                    className="border rounded-lg p-4 bg-green-50/50 border-green-200"
+                    className="border rounded-lg p-4 bg-green-50/50 border-green-200 hover:bg-green-50 transition-colors"
                   >
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <p className="font-medium">{itemName}</p>
                         <p className="text-sm text-muted-foreground">
-                          Order #{orderId}
+                          Order #{orderId} • {orderDate}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-green-600">
                           ₨ {installment.amount.toLocaleString()}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {installment.paidAt
-                            ? new Date(installment.paidAt).toLocaleDateString()
-                            : "Paid"}
-                        </p>
+                        <Badge 
+                          className={`${installmentStatusStyles[installment.status] || ''}`}
+                          variant="outline"
+                        >
+                          {installment.status.toUpperCase()}
+                        </Badge>
                       </div>
                     </div>
                     {installment.transactionId && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        TXN: {installment.transactionId}
+                      <div className="mt-2 pt-2 border-t border-green-100">
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-medium">TXN ID:</span> {installment.transactionId}
+                        </p>
+                      </div>
+                    )}
+                    {installment.paidAt && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Paid on: {new Date(installment.paidAt).toLocaleDateString()}
                       </p>
                     )}
                   </div>

@@ -29,31 +29,41 @@ const EASYPAISA_CONFIG = {
 
 // Generate JazzCash Secure Hash
 const generateJazzCashHash = (data) => {
-  const sortedString = Object.keys(data)
-    .sort()
-    .map((key) => data[key])
-    .join("&");
+  try {
+    const sortedString = Object.keys(data)
+      .sort()
+      .map((key) => data[key])
+      .join("&");
 
-  const hashString = JAZZCASH_CONFIG.integritySalt + "&" + sortedString;
-  return crypto
-    .createHmac("sha256", JAZZCASH_CONFIG.integritySalt)
-    .update(hashString)
-    .digest("hex")
-    .toUpperCase();
+    const hashString = JAZZCASH_CONFIG.integritySalt + "&" + sortedString;
+    return crypto
+      .createHmac("sha256", JAZZCASH_CONFIG.integritySalt)
+      .update(hashString)
+      .digest("hex")
+      .toUpperCase();
+  } catch (error) {
+    console.error("Error generating JazzCash hash:", error);
+    throw new Error("Failed to generate JazzCash hash");
+  }
 };
 
 // Generate EasyPaisa Hash
 const generateEasyPaisaHash = (data) => {
-  const hashString = Object.keys(data)
-    .sort()
-    .map((key) => `${key}=${data[key]}`)
-    .join("&");
+  try {
+    const hashString = Object.keys(data)
+      .sort()
+      .map((key) => `${key}=${data[key]}`)
+      .join("&");
 
-  return crypto
-    .createHmac("sha256", EASYPAISA_CONFIG.hashKey)
-    .update(hashString)
-    .digest("hex")
-    .toUpperCase();
+    return crypto
+      .createHmac("sha256", EASYPAISA_CONFIG.hashKey)
+      .update(hashString)
+      .digest("hex")
+      .toUpperCase();
+  } catch (error) {
+    console.error("Error generating EasyPaisa hash:", error);
+    throw new Error("Failed to generate EasyPaisa hash");
+  }
 };
 
 // Create JazzCash Payment
@@ -61,6 +71,11 @@ export const createJazzCashPayment = async (orderData) => {
   try {
     const { orderId, amount, customerEmail, customerMobile, description } =
       orderData;
+
+    // Validate required data
+    if (!orderId || !amount) {
+      throw new Error("Order ID and amount are required for JazzCash payment");
+    }
 
     const now = new Date();
     const transactionDateTime = now
@@ -110,7 +125,7 @@ export const createJazzCashPayment = async (orderData) => {
     };
   } catch (error) {
     console.error("JazzCash payment creation error:", error);
-    throw new Error("Failed to create JazzCash payment");
+    throw new Error(`Failed to create JazzCash payment: ${error.message}`);
   }
 };
 
@@ -119,6 +134,11 @@ export const createEasyPaisaPayment = async (orderData) => {
   try {
     const { orderId, amount, customerEmail, customerMobile, description } =
       orderData;
+
+    // Validate required data
+    if (!orderId || !amount) {
+      throw new Error("Order ID and amount are required for EasyPaisa payment");
+    }
 
     const paymentData = {
       storeId: EASYPAISA_CONFIG.storeId,
@@ -150,14 +170,23 @@ export const createEasyPaisaPayment = async (orderData) => {
     };
   } catch (error) {
     console.error("EasyPaisa payment creation error:", error);
-    throw new Error("Failed to create EasyPaisa payment");
+    throw new Error(`Failed to create EasyPaisa payment: ${error.message}`);
   }
 };
 
 // Verify JazzCash Payment Response
 export const verifyJazzCashPayment = (responseData) => {
   try {
+    // Validate response data
+    if (!responseData) {
+      return { verified: false, message: "No response data provided" };
+    }
+
     const receivedHash = responseData.pp_SecureHash;
+    if (!receivedHash) {
+      return { verified: false, message: "Missing secure hash in response" };
+    }
+
     const dataForHash = { ...responseData };
     delete dataForHash.pp_SecureHash;
 
@@ -180,14 +209,23 @@ export const verifyJazzCashPayment = (responseData) => {
     };
   } catch (error) {
     console.error("JazzCash verification error:", error);
-    return { verified: false, message: "Verification failed" };
+    return { verified: false, message: `Verification failed: ${error.message}` };
   }
 };
 
 // Verify EasyPaisa Payment Response
 export const verifyEasyPaisaPayment = (responseData) => {
   try {
+    // Validate response data
+    if (!responseData) {
+      return { verified: false, message: "No response data provided" };
+    }
+
     const receivedHash = responseData.merchantHashedReq;
+    if (!receivedHash) {
+      return { verified: false, message: "Missing merchant hash in response" };
+    }
+
     const dataForHash = { ...responseData };
     delete dataForHash.merchantHashedReq;
 
@@ -209,6 +247,6 @@ export const verifyEasyPaisaPayment = (responseData) => {
     };
   } catch (error) {
     console.error("EasyPaisa verification error:", error);
-    return { verified: false, message: "Verification failed" };
+    return { verified: false, message: `Verification failed: ${error.message}` };
   }
 };

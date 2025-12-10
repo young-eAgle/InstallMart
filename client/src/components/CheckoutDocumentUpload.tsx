@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,10 @@ import {
   XCircle,
   Clock,
   AlertCircle,
+  Eye,
 } from "lucide-react";
 import { documentApi } from "@/lib/api";
 import { Progress } from "@/components/ui/progress";
-
 
 interface Document {
   _id: string;
@@ -34,27 +34,41 @@ interface Document {
   rejectionReason?: string;
 }
 
-interface CheckoutDocumentUploadProps {
-  onDocumentsVerified: (verified: boolean) => void;
+// Interface for guest documents
+interface GuestDocument {
+  id: string;
+  type: string;
+  fileName: string;
+  fileSize: number;
+  file: File; // Store the actual file for later upload
 }
 
-export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocumentUploadProps) => {
-  const { token } = useAuth();
+interface CheckoutDocumentUploadProps {
+  onDocumentsVerified: (verified: boolean) => void;
+  onGuestDocumentsUploaded?: (documents: GuestDocument[]) => void;
+}
+
+export const CheckoutDocumentUpload = ({ 
+  onDocumentsVerified,
+  onGuestDocumentsUploaded,
+}: CheckoutDocumentUploadProps) => {
+  const { token, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [selectedType, setSelectedType] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [guestDocuments, setGuestDocuments] = useState<GuestDocument[]>([]);
 
-  // Fetch user documents
+  // Fetch user documents (only for authenticated users)
   const { data, isLoading } = useQuery({
     queryKey: ["checkout-documents"],
     queryFn: async () => {
       if (!token) throw new Error("No token");
       return await documentApi.getMyDocuments(token);
     },
-    enabled: !!token,
+    enabled: !!token && !!user,
   });
 
   const documents: Document[] = data?.documents || [];
@@ -85,8 +99,9 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
     }
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile || !selectedType) {
+  // Handle document upload for authenticated users
+  const handleAuthenticatedUpload = async () => {
+    if (!selectedFile || !selectedType || !token) {
       toast({
         title: "Missing information",
         description: "Please select document type and file",
@@ -101,7 +116,7 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
       formData.append("document", selectedFile);
       formData.append("type", selectedType);
 
-      const result = await documentApi.upload(formData, token!);
+      const result = await documentApi.upload(formData, token);
 
       toast({
         title: "Document uploaded",
@@ -122,24 +137,100 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
     }
   };
 
-  const handleDelete = async (documentId: string) => {
-    if (!confirm("Are you sure you want to delete this document?")) return;
-
-    try {
-      const result = await documentApi.delete(documentId, token!);
-
-      toast({ 
-        title: "Document deleted",
-        description: result.message
-      });
-      queryClient.invalidateQueries({ queryKey: ["checkout-documents"] });
-    } catch (error: any) {
+  // Handle document upload for guest users (store locally for later upload)
+  const handleGuestUpload = () => {
+    if (!selectedFile || !selectedType) {
       toast({
-        title: "Delete failed",
-        description: error.message || "Failed to delete document",
+        title: "Missing information",
+        description: "Please select document type and file",
         variant: "destructive",
       });
+      return;
     }
+
+    // Create a guest document entry
+    const newGuestDocument: GuestDocument = {
+      id: Math.random().toString(36).substr(2, 9), // Simple ID generation
+      type: selectedType,
+      fileName: selectedFile.name,
+      fileSize: selectedFile.size,
+      file: selectedFile // Store the actual file
+    };
+
+    const updatedDocuments = [...guestDocuments, newGuestDocument];
+    setGuestDocuments(updatedDocuments);
+    
+    // Notify parent component about guest documents
+    if (onGuestDocumentsUploaded) {
+      onGuestDocumentsUploaded(updatedDocuments);
+    }
+
+    toast({
+      title: "Document added",
+      description: "Document will be uploaded after order placement",
+    });
+
+    // Reset form
+    setSelectedFile(null);
+    setSelectedType("");
+  };
+
+  const handleUpload = async () => {
+    if (user && token) {
+      // Authenticated user flow
+      await handleAuthenticatedUpload();
+    } else {
+      // Guest user flow
+      handleGuestUpload();
+    }
+  };
+
+  const handleDelete = async (documentId: string) => {
+    if (!confirm("Are you sure you want to remove this document?")) return;
+
+    if (user && token) {
+      // Authenticated user flow for server documents
+      try {
+        // Find the document to get its ID
+        const documentToDelete = documents.find(doc => doc._id === documentId);
+        if (!documentToDelete) {
+          throw new Error("Document not found");
+        }
+
+        const result = await documentApi.delete(documentId, token!);
+
+        toast({ 
+          title: "Document deleted",
+          description: result.message
+        });
+        queryClient.invalidateQueries({ queryKey: ["checkout-documents"] });
+      } catch (error: any) {
+        toast({
+          title: "Delete failed",
+          description: error.message || "Failed to delete document",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Guest user flow - remove from local state
+      const updatedDocuments = guestDocuments.filter(doc => doc.id !== documentId);
+      setGuestDocuments(updatedDocuments);
+      
+      toast({ 
+        title: "Document removed",
+        description: "Document removed from your session"
+      });
+      
+      // Notify parent component about guest documents
+      if (onGuestDocumentsUploaded) {
+        onGuestDocumentsUploaded(updatedDocuments);
+      }
+    }
+  };
+
+  const handleViewDocument = (url: string) => {
+    // Open document in new tab
+    window.open(url, '_blank');
   };
 
   const getStatusIcon = (status: string) => {
@@ -155,10 +246,16 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
     }
   };
 
+  // Determine which documents to show based on user status
+  const allDocuments = (user && token) ? documents : [];
+  const displayedGuestDocuments = (!user || !token) ? guestDocuments : [];
+
   const requiredDocs = documentTypes.filter((dt) => dt.required);
   const uploadedRequiredDocs = requiredDocs.filter((dt) =>
-    documents.some((doc) => doc.type === dt.value),
+    allDocuments.some((doc) => doc.type === dt.value) ||
+    displayedGuestDocuments.some((doc) => doc.type === dt.value)
   );
+  
   const progress = (uploadedRequiredDocs.length / requiredDocs.length) * 100;
   
   // Notify parent component about document verification status
@@ -166,6 +263,7 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
   const isFullyVerified = progress === 100;
   
   useEffect(() => {
+    // For both authenticated users and guests, enforce document requirement
     onDocumentsVerified(isFullyVerified);
   }, [isFullyVerified, onDocumentsVerified]);
 
@@ -197,14 +295,19 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
             >
               {verificationStatus}
             </Badge>
-            {verificationStatus === "pending" && (
+            {verificationStatus === "pending" && user && token && (
               <span className="text-xs text-muted-foreground">
                 Awaiting admin review
               </span>
             )}
-            {verificationStatus === "verified" && (
+            {verificationStatus === "verified" && user && token && (
               <span className="text-xs text-muted-foreground">
                 Approved
+              </span>
+            )}
+            {(!user || !token) && (
+              <span className="text-xs text-muted-foreground">
+                Will be verified after checkout
               </span>
             )}
           </div>
@@ -233,9 +336,10 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
                   <SelectItem
                     key={type.value}
                     value={type.value}
-                    disabled={documents.some(
-                      (doc) => doc.type === type.value,
-                    )}
+                    disabled={
+                      allDocuments.some((doc) => doc.type === type.value) ||
+                      displayedGuestDocuments.some((doc) => doc.type === type.value)
+                    }
                   >
                     {type.label} {type.required && "*"}
                   </SelectItem>
@@ -292,10 +396,11 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
       )}
 
       {/* Uploaded Documents */}
-      {documents.length > 0 && (
+      {(allDocuments.length > 0 || displayedGuestDocuments.length > 0) && (
         <div className="space-y-3">
           <h4 className="text-sm font-semibold">Uploaded Documents</h4>
-          {documents.map((doc) => (
+          {/* Authenticated user documents */}
+          {allDocuments.map((doc) => (
             <div
               key={doc._id}
               className="flex items-center justify-between p-4 rounded-lg border"
@@ -322,8 +427,9 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(doc.url, "_blank")}
+                  onClick={() => handleViewDocument(doc.url)}
                 >
+                  <Eye className="w-4 h-4 mr-2" />
                   View
                 </Button>
                 {doc.status !== "approved" && (
@@ -335,6 +441,39 @@ export const CheckoutDocumentUpload = ({ onDocumentsVerified }: CheckoutDocument
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 )}
+              </div>
+            </div>
+          ))}
+          
+          {/* Guest user documents */}
+          {displayedGuestDocuments.map((doc) => (
+            <div
+              key={doc.id}
+              className="flex items-center justify-between p-4 rounded-lg border bg-muted/50"
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium text-sm">
+                    {documentTypes.find((t) => t.value === doc.type)?.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {doc.fileName} ({(doc.fileSize / 1024).toFixed(2)} KB)
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Stored locally - will be uploaded after order placement
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(doc.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           ))}

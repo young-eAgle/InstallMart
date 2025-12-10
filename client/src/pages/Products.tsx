@@ -74,30 +74,7 @@ const Products = () => {
       }),
   });
 
-  // const products = data?.products ?? [];
 
-
-  // const { data, isLoading, isError, error } = useQuery({
-  //   queryKey: [
-  //     "products",
-  //     category,
-  //     subcategory,
-  //     searchQuery,
-  //     selectedBrands,
-  //     priceRange,
-  //     sortBy,
-  //   ],
-  //   queryFn: () =>
-  //     productApi.list({
-  //       category: category !== "all" ? category : undefined,
-  //       subcategory: subcategory || undefined,
-  //       search: searchQuery || undefined,
-  //       brand: selectedBrands.length > 0 ? selectedBrands.join(",") : undefined,
-  //       minPrice: priceRange[0],
-  //       maxPrice: priceRange[1],
-  //       sort: sortBy,
-  //     }),
-  // });
 
   const products = data?.products ?? [];
   const pagination = data?.pagination;

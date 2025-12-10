@@ -150,7 +150,7 @@ export const CategoryProductSection = ({
               return (
                 <Card
                   key={product.id}
-                  className="group relative flex-shrink-0 w-64 overflow-hidden border-2 hover:border-primary transition-all duration-300 hover:shadow-2xl snap-start cursor-pointer"
+                  className="group relative flex-shrink-0 w-64 overflow-hidden border-2 hover:border-primary transition-all duration-300 hover:shadow-2xl snap-start cursor-pointer flex flex-col h-full"
                   onMouseEnter={() => setHoveredProduct(product.id)}
                   onMouseLeave={() => setHoveredProduct(null)}
                   onClick={() => navigate(`/product/${product.id}`)}
@@ -228,7 +228,7 @@ export const CategoryProductSection = ({
                   </div>
 
                   {/* Product Info */}
-                  <CardContent className="p-4 space-y-3">
+                  <CardContent className="p-4 space-y-3 flex-grow flex flex-col">
                     {/* Rating */}
                     <div className="flex items-center gap-1">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -247,7 +247,7 @@ export const CategoryProductSection = ({
                     </div>
 
                     {/* Product Name */}
-                    <h3 className="font-semibold text-base line-clamp-2 min-h-[3rem] hover:text-primary transition-colors">
+                    <h3 className="font-semibold text-base line-clamp-2 min-h-[3rem] hover:text-primary transition-colors flex-grow">
                       {product.name}
                     </h3>
 
@@ -276,26 +276,21 @@ export const CategoryProductSection = ({
                       </p>
                     )}
 
-                    {/* Add to Cart Button */}
-                    <Button
-                      size="sm"
-                      className="w-full group-hover:shadow-lg transition-all"
-                      disabled={product.stock <= 0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart({
-                          id: product.id,
-                          name: product.name,
-                          price: product.price,
-                          image_url: product.image_url,
-                          category: product.category,
-                          installmentMonths: 0,
-                        });
-                      }}
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                    </Button>
+                    {/* Order Now Button */}
+                    <div className="mt-auto">
+                      <Button
+                        className="w-full gradient-accent py-5 font-semibold group-hover:shadow-lg transition-all"
+                        disabled={product.stock <= 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Navigate to product detail page for installment selection
+                          navigate(`/product/${product.id}`);
+                        }}
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        {product.stock > 0 ? "Order Now" : "Out of Stock"}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );

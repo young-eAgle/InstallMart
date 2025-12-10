@@ -108,13 +108,15 @@ const SimpleDashboard = () => {
 
     orders.forEach((order) => {
       order.installments.forEach((inst) => {
-        history.push({ ...inst, order });
+        if (inst.status === "paid" && inst.paidAt) {
+          history.push({ ...inst, order });
+        }
       });
     });
 
     return history
       .sort(
-        (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
+        (a, b) => new Date(b.paidAt!).getTime() - new Date(a.paidAt!).getTime(),
       )
       .slice(0, 6);
   }, [orders]);
@@ -248,6 +250,11 @@ const SimpleDashboard = () => {
               <div className="text-2xl font-bold">
                 {nextPayment ? formatDate(nextPayment.dueDate) : "All clear"}
               </div>
+              {nextPayment && (
+                <p className="text-xs text-muted-foreground">
+                  Rs. {nextPayment.amount.toLocaleString()}
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -489,6 +496,11 @@ const SimpleDashboard = () => {
                                               </span>
                                             )}
                                           </p>
+                                          {inst.paidAt && (
+                                            <p className="text-xs text-green-600 mt-1">
+                                              Paid on: {new Date(inst.paidAt).toLocaleDateString()}
+                                            </p>
+                                          )}
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-2">
@@ -507,6 +519,11 @@ const SimpleDashboard = () => {
                                           {inst.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
                                           {inst.status}
                                         </Badge>
+                                        {isPaid && inst.transactionId && (
+                                          <span className="text-xs text-muted-foreground font-mono">
+                                            TXN: {inst.transactionId.substring(0, 8)}...
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
                                   );
@@ -636,6 +653,18 @@ const SimpleDashboard = () => {
                           </div>
                         </div>
 
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge 
+                            variant={inst.status === "overdue" ? "destructive" : "outline"}
+                            className="text-xs"
+                          >
+                            {inst.status}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            Payment #{inst.order?.installments.findIndex(i => i._id === inst._id)! + 1} of {inst.order?.installments.length}
+                          </span>
+                        </div>
+
                         <div className="flex gap-2">
                           <PaymentButton
                             order={inst.order}
@@ -691,44 +720,54 @@ const SimpleDashboard = () => {
                     const orderId = inst.order?.id
                       ? inst.order.id.slice(-6)
                       : "N/A";
+                    const orderDate = inst.order?.createdAt
+                      ? new Date(inst.order.createdAt).toLocaleDateString()
+                      : "N/A";
 
                     return (
                       <div
                         key={inst._id}
-                        className="border rounded-lg p-4 bg-green-50/50 border-green-200"
+                        className="border rounded-lg p-4 bg-green-50/50 border-green-200 hover:bg-green-50 transition-colors"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <p className="font-medium">{itemName}</p>
                             <p className="text-sm text-muted-foreground">
-                              Order #{orderId}
+                              Order #{orderId} • {orderDate}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-green-600">
                               Rs. {inst.amount.toLocaleString()}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              {inst.paidAt
-                                ? new Date(inst.paidAt).toLocaleDateString()
-                                : "Paid"}
-                            </p>
+                            <Badge 
+                              variant="default"
+                              className="text-xs"
+                            >
+                              PAID
+                            </Badge>
                           </div>
                         </div>
                         {inst.transactionId && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            TXN: {inst.transactionId}
+                          <div className="mt-2 pt-2 border-t border-green-100">
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">TXN ID:</span> {inst.transactionId}
+                            </p>
+                          </div>
+                        )}
+                        {inst.paidAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Paid on: {new Date(inst.paidAt).toLocaleDateString()}
                           </p>
                         )}
                       </div>
                     );
                   })}
-
                   {paymentHistory.length > 5 && (
-                    <Button
-                      variant="ghost"
+                    <Button 
+                      variant="ghost" 
                       className="w-full"
-                      onClick={() => navigate("/orders")}
+                      onClick={() => navigate('/orders')}
                     >
                       View All Payment History
                     </Button>

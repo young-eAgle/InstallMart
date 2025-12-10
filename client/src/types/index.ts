@@ -29,7 +29,7 @@ export interface AuthUser {
 
 export interface OrderItem extends CartItem {}
 
-export type PaymentMethod = "jazzcash" | "easypaisa" | "bank";
+export type PaymentMethod = "jazzcash" | "easypaisa" | "bank" | "mock";
 export type PaymentStatus = "pending" | "verified" | "rejected";
 
 export interface Installment {
