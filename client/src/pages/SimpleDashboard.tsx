@@ -78,7 +78,13 @@ const SimpleDashboard = () => {
     orders.forEach((order) => {
       order.installments.forEach((inst) => {
         if (inst.status !== "paid") {
-          upcoming.push({ ...inst, order });
+          upcoming.push({ 
+            ...inst, 
+            order: {
+              ...order,
+              id: order.id
+            }
+          });
         }
       });
     });
@@ -109,7 +115,13 @@ const SimpleDashboard = () => {
     orders.forEach((order) => {
       order.installments.forEach((inst) => {
         if (inst.status === "paid" && inst.paidAt) {
-          history.push({ ...inst, order });
+          history.push({ 
+            ...inst, 
+            order: {
+              ...order,
+              id: order.id
+            }
+          });
         }
       });
     });

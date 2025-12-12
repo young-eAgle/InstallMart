@@ -9,7 +9,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CreditCard, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { paymentApi } from "@/lib/api";
@@ -32,16 +31,14 @@ export const PaymentButton = ({
   const { token } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"jazzcash" | "easypaisa" | "mock">(
-    "mock",
-  );
+  const [paymentMethod] = useState<"safepay" | "mock">("safepay");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePayment = async () => {
-    if (!token) {
+    if (!order?.id) {
       toast({
-        title: "Authentication Required",
-        description: "Please login to make a payment",
+        title: "Error",
+        description: "Order information is missing",
         variant: "destructive",
       });
       return;
@@ -64,45 +61,10 @@ export const PaymentButton = ({
         if (paymentMethod === "mock") {
           window.location.href = response.redirectUrl || `${window.location.origin}/payment/success?orderId=${order.id}&txnId=${response.transactionRef}&amount=${amount}`;
         }
-        // For JazzCash, we submit a form directly
-        else if (paymentMethod === "jazzcash") {
-          // Create a form and submit it to the payment gateway
-          const form = document.createElement("form");
-          form.method = "POST";
-          form.action = response.paymentUrl;
-          form.style.display = "none";
-
-          // Add all form fields
-          Object.entries(response.formData).forEach(([key, value]) => {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = key;
-            input.value = value;
-            form.appendChild(input);
-          });
-
-          document.body.appendChild(form);
-          form.submit();
-        } 
-        // For EasyPaisa, we redirect to the payment URL
-        else if (paymentMethod === "easypaisa") {
-          // Create a form for GET request
-          const form = document.createElement("form");
-          form.method = "GET";
-          form.action = response.paymentUrl;
-          form.style.display = "none";
-
-          // Add all form fields
-          Object.entries(response.formData).forEach(([key, value]) => {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = key;
-            input.value = value;
-            form.appendChild(input);
-          });
-
-          document.body.appendChild(form);
-          form.submit();
+        // For SafePay, we redirect to the payment URL
+        else if (paymentMethod === "safepay") {
+          // Redirect to SafePay checkout page
+          window.location.href = response.paymentUrl;
         }
       }
     } catch (error) {
@@ -131,71 +93,26 @@ export const PaymentButton = ({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Select Payment Method</DialogTitle>
+          <DialogTitle>Payment Method</DialogTitle>
           <DialogDescription>
-            Choose your preferred payment method to complete the payment of Rs.{" "}
-            {amount.toLocaleString()}
+            Complete your payment of Rs. {amount.toLocaleString()}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <RadioGroup
-            value={paymentMethod}
-            onValueChange={(value) =>
-              setPaymentMethod(value as "jazzcash" | "easypaisa" | "mock")
-            }
-          >
-            <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-              <RadioGroupItem value="mock" id="mock" />
-              <Label htmlFor="mock" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-xs">MOCK</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Mock Payment</p>
-                    <p className="text-xs text-muted-foreground">
-                      Test payment simulation
-                    </p>
-                  </div>
-                </div>
-              </Label>
+          <div className="flex items-center space-x-3 border rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <span className="text-purple-600 font-bold text-xs">SP</span>
+              </div>
+              <div>
+                <p className="font-medium">SafePay</p>
+                <p className="text-xs text-muted-foreground">
+                  Pay with JazzCash, EasyPaisa, Bank Transfer, or Credit Card
+                </p>
+              </div>
             </div>
-
-            <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-              <RadioGroupItem value="jazzcash" id="jazzcash" />
-              <Label htmlFor="jazzcash" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <span className="text-red-600 font-bold text-xs">Jazz</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">JazzCash</p>
-                    <p className="text-xs text-muted-foreground">
-                      Pay using JazzCash wallet
-                    </p>
-                  </div>
-                </div>
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors">
-              <RadioGroupItem value="easypaisa" id="easypaisa" />
-              <Label htmlFor="easypaisa" className="flex-1 cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span className="text-green-600 font-bold text-xs">EP</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">EasyPaisa</p>
-                    <p className="text-xs text-muted-foreground">
-                      Pay using EasyPaisa wallet
-                    </p>
-                  </div>
-                </div>
-              </Label>
-            </div>
-          </RadioGroup>
+          </div>
 
           <div className="bg-muted/50 p-4 rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
@@ -204,7 +121,7 @@ export const PaymentButton = ({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Payment Method:</span>
-              <span className="font-medium capitalize">{paymentMethod}</span>
+              <span className="font-medium capitalize">SafePay</span>
             </div>
           </div>
 
@@ -228,8 +145,8 @@ export const PaymentButton = ({
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            You will be redirected to the payment gateway to complete your
-            transaction securely.
+            You will be redirected to SafePay to complete your payment securely.
+            SafePay supports JazzCash, EasyPaisa, Bank Transfers, and Credit Cards.
           </p>
         </div>
       </DialogContent>

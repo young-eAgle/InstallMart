@@ -1,12 +1,7 @@
 import { Order } from "../models/Order.js";
 import { User } from "../models/User.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import {
-  createJazzCashPayment,
-  createEasyPaisaPayment,
-  verifyJazzCashPayment,
-  verifyEasyPaisaPayment,
-} from "../utils/paymentGateways.js";
+import { createSafePayPayment, verifySafePayPayment } from "../utils/paymentGateways.js";
 import { sendEmail } from "../utils/mailer.js";
 
 // Mock payment configuration
@@ -44,7 +39,7 @@ export const initializePayment = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Order ID and payment method are required" });
   }
 
-  if (!['jazzcash', 'easypaisa', 'mock'].includes(paymentMethod)) {
+  if (!['safepay', 'mock'].includes(paymentMethod)) {
     logPaymentEvent("VALIDATION_ERROR", { 
       userId: req.user.id, 
       error: "Invalid payment method", 
@@ -245,11 +240,8 @@ export const initializePayment = asyncHandler(async (req, res) => {
       amount 
     });
     
-    if (paymentMethod === "jazzcash") {
-      paymentResponse = await createJazzCashPayment(paymentData);
-    } else if (paymentMethod === "easypaisa") {
-      paymentResponse = await createEasyPaisaPayment(paymentData);
-    }
+    // Since we're only supporting SafePay now, directly call the SafePay payment creation
+    paymentResponse = await createSafePayPayment(paymentData);
     
     logPaymentEvent("REAL_PAYMENT_CREATED", { 
       userId: req.user.id, 
@@ -282,113 +274,37 @@ export const initializePayment = asyncHandler(async (req, res) => {
   }
 });
 
-// JazzCash callback handler
-export const jazzCashCallback = asyncHandler(async (req, res) => {
-  logPaymentEvent("JAZZCASH_CALLBACK_RECEIVED", { 
+// SafePay callback handler
+export const safePayCallback = asyncHandler(async (req, res) => {
+  logPaymentEvent("SAFEPAY_CALLBACK_RECEIVED", { 
     method: req.method,
+    query: req.query,
     body: req.body 
   });
 
-  const verificationResult = verifyJazzCashPayment(req.body);
+  // Prepare request data for verification
+  const requestData = {
+    method: req.method,
+    query: req.query,
+    body: req.body
+  };
+
+  const verificationResult = verifySafePayPayment(requestData);
 
   if (!verificationResult.verified) {
-    logPaymentEvent("JAZZCASH_VERIFICATION_FAILED", { 
+    logPaymentEvent("SAFEPAY_VERIFICATION_FAILED", { 
       error: verificationResult.message,
+      query: req.query,
       body: req.body 
     });
     
-    console.error("JazzCash verification failed:", verificationResult.message);
-    return res.redirect(
-      `${process.env.FRONTEND_URL}/payment/failed?reason=verification_failed`,
-    );
-  }
-
-  if (verificationResult.isSuccess) {
-    // Extract order ID from bill reference
-    const billRef = verificationResult.billReference;
-    const orderId = billRef.replace("ORD", "");
-
-    const order = await Order.findById(orderId);
-    if (order) {
-      // Mark first pending installment as paid
-      const installment = order.installments.find(
-        (inst) => inst.status === "pending",
-      );
-      if (installment) {
-        installment.status = "paid";
-        installment.paidAt = new Date();
-        installment.transactionId = verificationResult.transactionId;
-
-        // Update next due date
-        const nextPending = order.installments.find(
-          (inst) => inst.status === "pending",
-        );
-        order.nextDueDate = nextPending ? nextPending.dueDate : null;
-
-        await order.save();
-        
-        logPaymentEvent("JAZZCASH_PAYMENT_SUCCESS", { 
-          orderId, 
-          transactionId: verificationResult.transactionId,
-          amount: verificationResult.amount 
-        });
-
-        // Send confirmation email
-        try {
-          const user = await User.findById(order.user);
-          if (user) {
-            await sendEmail(user.email, "paymentConfirmation", {
-              user,
-              installment: installment.toJSON(),
-              order: order.toJSON(),
-            });
-          }
-        } catch (emailError) {
-          console.error("Failed to send confirmation email:", emailError);
-          logPaymentEvent("EMAIL_SEND_ERROR", { 
-            orderId, 
-            error: emailError.message 
-          });
-        }
-      }
+    console.error("SafePay verification failed:", verificationResult.message);
+    
+    // For GET requests, redirect to appropriate page
+    if (req.method === "GET") {
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?error=verification_failed`);
     }
-
-    return res.redirect(
-      `${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}&txnId=${verificationResult.transactionId}&amount=${verificationResult.amount}`,
-    );
-  } else {
-    logPaymentEvent("JAZZCASH_PAYMENT_FAILED", { 
-      orderId, 
-      responseCode: verificationResult.responseCode,
-      responseMessage: verificationResult.responseMessage 
-    });
     
-    console.error(
-      "JazzCash payment failed:",
-      verificationResult.responseMessage,
-    );
-    return res.redirect(
-      `${process.env.FRONTEND_URL}/payment/failed?reason=${encodeURIComponent(verificationResult.responseMessage)}`,
-    );
-  }
-});
-
-// EasyPaisa callback handler
-export const easyPaisaCallback = asyncHandler(async (req, res) => {
-  logPaymentEvent("EASYPAISA_CALLBACK_RECEIVED", { 
-    method: req.method,
-    body: req.body 
-  });
-
-  const verificationResult = verifyEasyPaisaPayment(req.body);
-
-  if (!verificationResult.verified) {
-    logPaymentEvent("EASYPAISA_VERIFICATION_FAILED", { 
-      error: verificationResult.message,
-      body: req.body 
-    });
-    
-    console.error("EasyPaisa verification failed:", verificationResult.message);
     return res.status(400).json({
       success: false,
       message: "Payment verification failed",
@@ -396,9 +312,23 @@ export const easyPaisaCallback = asyncHandler(async (req, res) => {
   }
 
   if (verificationResult.isSuccess) {
-    // Extract order ID from reference
-    const orderRef = req.body.orderRefNum;
-    const orderId = orderRef.replace(/ORD(\d+)\d{13}/, "$1");
+    const orderId = verificationResult.orderId;
+    
+    if (!orderId) {
+      logPaymentEvent("SAFEPAY_MISSING_ORDER_ID", { 
+        transactionId: verificationResult.transactionId
+      });
+      
+      // For GET requests, redirect to appropriate page
+      if (req.method === "GET") {
+        return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?error=missing_order_id`);
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message: "Missing order ID in payment data",
+      });
+    }
 
     const order = await Order.findById(orderId);
     if (order) {
@@ -419,7 +349,7 @@ export const easyPaisaCallback = asyncHandler(async (req, res) => {
 
         await order.save();
         
-        logPaymentEvent("EASYPAISA_PAYMENT_SUCCESS", { 
+        logPaymentEvent("SAFEPAY_PAYMENT_SUCCESS", { 
           orderId, 
           transactionId: verificationResult.transactionId,
           amount: verificationResult.amount 
@@ -445,159 +375,80 @@ export const easyPaisaCallback = asyncHandler(async (req, res) => {
       }
     }
 
+    // For GET requests, redirect to success page
+    if (req.method === "GET") {
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}&txnId=${verificationResult.transactionId}`);
+    }
+
     return res.json({
       success: true,
-      orderId,
-      transactionId: verificationResult.transactionId,
-      amount: verificationResult.amount,
+      message: "Payment processed successfully",
     });
   } else {
-    logPaymentEvent("EASYPAISA_PAYMENT_FAILED", { 
-      orderId, 
-      responseCode: verificationResult.responseCode,
-      responseMessage: verificationResult.responseMessage 
+    logPaymentEvent("SAFEPAY_PAYMENT_FAILED", { 
+      orderId: verificationResult.orderId,
+      transactionId: verificationResult.transactionId,
+      amount: verificationResult.amount 
     });
     
-    console.error(
-      "EasyPaisa payment failed:",
-      verificationResult.responseMessage,
-    );
-    return res.json({
+    console.error("SafePay payment failed");
+    
+    // For GET requests, redirect to failed page
+    if (req.method === "GET") {
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?error=payment_failed`);
+    }
+    
+    return res.status(400).json({
       success: false,
-      message: verificationResult.responseMessage,
+      message: "Payment failed",
     });
   }
 });
 
 // Mock payment callback handler
 export const mockPaymentCallback = asyncHandler(async (req, res) => {
-  logPaymentEvent("MOCK_CALLBACK_RECEIVED", { 
-    body: req.body 
-  });
-
-  const { orderId, transactionId, amount, status } = req.body;
-
-  if (status !== "success") {
-    logPaymentEvent("MOCK_PAYMENT_FAILED", { 
-      orderId, 
-      transactionId, 
-      status 
-    });
-    
-    console.error("Mock payment failed");
-    return res.redirect(
-      `${process.env.FRONTEND_URL}/payment/failed?reason=payment_failed`,
-    );
-  }
-
-  const order = await Order.findById(orderId);
-  if (order) {
-    // Find the installment that was paid
-    const installment = order.installments.find(
-      (inst) => inst.status === "pending",
-    );
-    if (installment) {
-      installment.status = "paid";
-      installment.paidAt = new Date();
-      installment.transactionId = transactionId;
-
-      // Update next due date
-      const nextPending = order.installments.find(
-        (inst) => inst.status === "pending",
-      );
-      order.nextDueDate = nextPending ? nextPending.dueDate : null;
-
-      await order.save();
-      
-      logPaymentEvent("MOCK_PAYMENT_SUCCESS", { 
-        orderId, 
-        transactionId, 
-        amount 
-      });
-
-      // Send confirmation email
-      try {
-        const user = await User.findById(order.user);
-        if (user) {
-          await sendEmail(user.email, "paymentConfirmation", {
-            user,
-            installment: installment.toJSON(),
-            order: order.toJSON(),
-          });
-        }
-      } catch (emailError) {
-        console.error("Failed to send confirmation email:", emailError);
-        logPaymentEvent("EMAIL_SEND_ERROR", { 
-          orderId, 
-          error: emailError.message 
-        });
-      }
-    }
-  }
-
-  return res.redirect(
-    `${process.env.FRONTEND_URL}/payment/success?orderId=${orderId}&txnId=${transactionId}&amount=${amount}`,
-  );
+  // Mock payments don't need callback handling as they're processed immediately
+  res.json({ success: true, message: "Mock payment processed" });
 });
 
 // Get payment status
 export const getPaymentStatus = asyncHandler(async (req, res) => {
   const { orderId, installmentId } = req.params;
 
-  logPaymentEvent("PAYMENT_STATUS_REQUEST", { 
-    userId: req.user.id, 
-    orderId, 
-    installmentId 
-  });
-
   const order = await Order.findById(orderId);
   if (!order) {
-    logPaymentEvent("ORDER_NOT_FOUND_FOR_STATUS", { 
-      userId: req.user.id, 
-      orderId 
-    });
     return res.status(404).json({ message: "Order not found" });
   }
 
-  // Check if user owns this order
-  if (order.user.toString() !== req.user.id && req.user.role !== "admin") {
-    logPaymentEvent("UNAUTHORIZED_STATUS_ACCESS", { 
-      userId: req.user.id, 
-      orderId, 
-      orderUserId: order.user.toString() 
-    });
-    return res.status(403).json({ message: "Unauthorized" });
+  // Check if user owns this order (or is admin)
+  if (order.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return res.status(403).json({ message: "Access denied" });
   }
 
+  let installment;
   if (installmentId) {
-    const installment = order.installments.id(installmentId);
+    installment = order.installments.id(installmentId);
     if (!installment) {
-      logPaymentEvent("INSTALLMENT_NOT_FOUND_FOR_STATUS", { 
-        userId: req.user.id, 
-        orderId, 
-        installmentId 
-      });
       return res.status(404).json({ message: "Installment not found" });
     }
-
-    return res.json({
-      status: installment.status,
-      amount: installment.amount,
-      paidAt: installment.paidAt,
-      transactionId: installment.transactionId,
-    });
+  } else {
+    // Get first pending installment
+    installment = order.installments.find(inst => 
+      ["pending", "paid", "overdue"].includes(inst.status)
+    );
+    if (!installment) {
+      return res.status(404).json({ message: "No installments found" });
+    }
   }
 
   res.json({
+    status: installment.status,
+    amount: installment.amount,
+    paidAt: installment.paidAt,
+    transactionId: installment.transactionId,
     totalInstallments: order.installments.length,
-    paidInstallments: order.installments.filter((i) => i.status === "paid")
-      .length,
-    pendingInstallments: order.installments.filter(
-      (i) => i.status === "pending",
-    ).length,
-    overdueInstallments: order.installments.filter(
-      (i) => i.status === "overdue",
-    ).length,
-    nextDueDate: order.nextDueDate,
+    paidInstallments: order.installments.filter(i => i.status === "paid").length,
+    pendingInstallments: order.installments.filter(i => i.status === "pending").length,
+    overdueInstallments: order.installments.filter(i => i.status === "overdue").length,
   });
 });

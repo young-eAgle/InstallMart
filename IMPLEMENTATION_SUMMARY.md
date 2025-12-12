@@ -33,7 +33,7 @@ This document provides a comprehensive overview of the features implemented in t
 - Email notifications for order confirmations
 
 ### 5. Document Management
-- Mandatory document upload for both customers and guests
+- Mandatory document upload for both customers and guests during checkout
 - Document verification process
 - Guest document association with orders
 - Secure document storage with Cloudinary
@@ -43,6 +43,7 @@ This document provides a comprehensive overview of the features implemented in t
 - **Mock Payment System** (95% success rate simulation)
 - **JazzCash Integration** (Sandbox/Production ready)
 - **EasyPaisa Integration** (Sandbox/Production ready)
+- **SafePay Integration** (Sandbox/Production ready)
 - Installment payment processing
 - Payment status tracking
 - Transaction ID recording
@@ -80,7 +81,7 @@ This document provides a comprehensive overview of the features implemented in t
 - **Authentication**: JWT with bcrypt
 - **File Storage**: Cloudinary
 - **Email Service**: Nodemailer
-- **Payment Gateways**: JazzCash, EasyPaisa
+- **Payment Gateways**: JazzCash, EasyPaisa, SafePay
 - **State Management**: React Context API
 - **UI Components**: Shadcn UI
 
@@ -97,6 +98,8 @@ This document provides a comprehensive overview of the features implemented in t
 - Implemented callback validation for all payment gateways
 - Created detailed testing procedures for payment flows
 - Added environment configuration guidance for production deployment
+- **Integrated SafePay as a third payment option**
+- **Fixed SafePay SDK import issue**
 
 ### Dashboard Improvements
 - Enhanced installment data display with detailed payment information

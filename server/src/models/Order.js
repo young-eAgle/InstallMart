@@ -33,7 +33,7 @@ const orderSchema = new mongoose.Schema(
     status: { type: String, enum: ["pending", "approved", "shipped"], default: "pending" },
     shippingAddress: { type: String, required: true },
     phone: { type: String, required: true },
-    paymentMethod: { type: String, enum: ["jazzcash", "easypaisa", "bank", "mock"], required: true },
+    paymentMethod: { type: String, enum: ["safepay"], required: true },
     paymentReference: { type: String },
     paymentProofUrl: { type: String },
     paymentStatus: { type: String, enum: ["pending", "verified", "rejected"], default: "pending" },

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { orderApi } from "@/lib/api";
 import { PaymentButton } from "@/components/PaymentButton";
+import type { Installment, Order } from "@/types";
 
 const statusStyles: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
@@ -78,6 +79,50 @@ const OrderHistory = () => {
   if (!user || !token) {
     return null;
   }
+
+  // Prepare payment history
+  const paymentHistory = useMemo(() => {
+    const history: Array<Installment & { order: Order }> = [];
+
+    orders.forEach((order) => {
+      order.installments.forEach((inst) => {
+        if (inst.status === "paid" && inst.paidAt) {
+          history.push({ 
+            ...inst, 
+            order: {
+              ...order,
+              id: order.id
+            }
+          });
+        }
+      });
+    });
+
+    return history
+      .sort(
+        (a, b) => new Date(b.paidAt!).getTime() - new Date(a.paidAt!).getTime(),
+      )
+      .slice(0, 10);
+  }, [orders]);
+
+  // Prepare installments with proper order structure
+  const allInstallments = useMemo(() => {
+    const installments: Array<Installment & { order: Order }> = [];
+    
+    orders.forEach((order) => {
+      order.installments.forEach((inst) => {
+        installments.push({
+          ...inst,
+          order: {
+            ...order,
+            id: order.id
+          }
+        });
+      });
+    });
+    
+    return installments;
+  }, [orders]);
 
   return (
     <div className="min-h-screen bg-background">

@@ -4,7 +4,7 @@ import { User } from "../models/User.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { sendEmail } from "../utils/mailer.js";
 
-const PAYMENT_METHODS = ["jazzcash", "easypaisa", "bank", "mock"];
+const PAYMENT_METHODS = ["safepay"];
 
 const addMonths = (date, months) => {
   const result = new Date(date);
@@ -137,8 +137,7 @@ export const getGuestOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   
   const order = await Order.findById(orderId)
-    .populate("items.product")
-    .lean();
+    .populate("items.product");
     
   if (!order) {
     return res.status(404).json({ message: "Order not found" });
@@ -150,5 +149,8 @@ export const getGuestOrder = asyncHandler(async (req, res) => {
     return res.status(403).json({ message: "Access denied" });
   }
   
-  res.json({ order });
+  // Transform order to ensure id field is properly set
+  const transformedOrder = order.toJSON();
+  
+  res.json({ order: transformedOrder });
 });

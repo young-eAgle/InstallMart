@@ -80,7 +80,13 @@ export const PaymentGateway = () => {
 
   // Get all installments with order info
   const allInstallments = orders.flatMap(order => 
-    order.installments.map(installment => ({ ...installment, order }))
+    order.installments.map(installment => ({ 
+      ...installment, 
+      order: {
+        ...order,
+        id: order.id || order._id
+      }
+    }))
   );
 
   // Sort and get upcoming payments

@@ -9,9 +9,11 @@
     "dev": "nodemon src/server.js",
     "test": "jest",
     "test:payment": "node scripts/testPaymentIntegration.js",
+    "test:safepay": "node scripts/testSafePayIntegration.js",
     "setup:payment": "node scripts/setupPaymentEnv.js"
   },
   "dependencies": {
+    "@sfpy/node-sdk": "^1.0.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.0",
     "cors": "^2.8.5",

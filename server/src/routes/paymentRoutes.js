@@ -1,8 +1,7 @@
 import { Router } from "express";
 import {
   initializePayment,
-  jazzCashCallback,
-  easyPaisaCallback,
+  safePayCallback,
   mockPaymentCallback,
   getPaymentStatus,
 } from "../controllers/paymentController.js";
@@ -18,9 +17,8 @@ router.post("/initialize", protect, paymentSecurity, initializePayment);
 router.get("/status/:orderId/:installmentId?", protect, getPaymentStatus);
 
 // Payment gateway callbacks (public endpoints with validation)
-router.post("/jazzcash/callback", validatePaymentCallback, jazzCashCallback);
-router.get("/jazzcash/callback", validatePaymentCallback, jazzCashCallback);
-router.post("/easypaisa/callback", validatePaymentCallback, easyPaisaCallback);
+router.post("/safepay/callback", validatePaymentCallback, safePayCallback);
+router.get("/safepay/callback", validatePaymentCallback, safePayCallback);
 router.post("/mock/callback", validatePaymentCallback, mockPaymentCallback);
 
 export default router;

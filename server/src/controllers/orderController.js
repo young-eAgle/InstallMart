@@ -4,7 +4,7 @@ import { User } from "../models/User.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { sendEmail } from "../utils/mailer.js";
 
-const PAYMENT_METHODS = ["jazzcash", "easypaisa", "bank", "mock"];
+const PAYMENT_METHODS = ["safepay"];
 
 const addMonths = (date, months) => {
   const result = new Date(date);
@@ -113,17 +113,23 @@ export const createOrder = asyncHandler(async (req, res) => {
 export const getMyOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ user: req.user.id })
     .sort({ createdAt: -1 })
-    .populate("items.product")
-    .lean();
-  res.json({ orders });
+    .populate("items.product");
+
+  // Transform orders to ensure id field is properly set
+  const transformedOrders = orders.map(order => order.toJSON());
+  
+  res.json({ orders: transformedOrders });
 });
 
 export const getAllOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find()
     .sort({ createdAt: -1 })
-    .populate("user", "fullName email role")
-    .lean();
-  res.json({ orders });
+    .populate("user", "fullName email role");
+
+  // Transform orders to ensure id field is properly set
+  const transformedOrders = orders.map(order => order.toJSON());
+  
+  res.json({ orders: transformedOrders });
 });
 
 export const updateInstallmentStatus = asyncHandler(async (req, res) => {

@@ -369,7 +369,7 @@ export const paymentApi = {
   initialize: (
     payload: {
       orderId: string;
-      paymentMethod: "jazzcash" | "easypaisa" | "mock";
+      paymentMethod: "safepay" | "mock";
       installmentId?: string;
     },
     token: string,
@@ -477,7 +477,7 @@ export const documentApi = {
       documents: any[];
       verificationStatus: string;
       documentsVerified: boolean;
-    }>(buildUrl("/api/documents/my"), {
+    }>(buildUrl("/api/documents/my-documents"), {
       headers: { Authorization: `Bearer ${token}` },
     }),
 

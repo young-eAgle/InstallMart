@@ -39,7 +39,7 @@ const Checkout = () => {
     address: "",
     phone: "",
   });
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("jazzcash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("safepay");
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [documentsVerified, setDocumentsVerified] = useState(false);
@@ -297,9 +297,8 @@ const Checkout = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="jazzcash">JazzCash</SelectItem>
-                        <SelectItem value="easypaisa">Easypaisa</SelectItem>
-                        <SelectItem value="bank">Bank Transfer</SelectItem>
+                        <SelectItem value="safepay">SafePay (JazzCash, EasyPaisa, Bank Transfer, Credit Card)</SelectItem>
+                        <SelectItem value="mock">Mock Payment (Testing Only)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
