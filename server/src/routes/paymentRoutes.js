@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   initializePayment,
   safePayCallback,
+  payFastCallback,
   mockPaymentCallback,
   getPaymentStatus,
 } from "../controllers/paymentController.js";
@@ -19,6 +20,7 @@ router.get("/status/:orderId/:installmentId?", protect, getPaymentStatus);
 // Payment gateway callbacks (public endpoints with validation)
 router.post("/safepay/callback", validatePaymentCallback, safePayCallback);
 router.get("/safepay/callback", validatePaymentCallback, safePayCallback);
+router.post("/payfast/callback", validatePaymentCallback, payFastCallback);
 router.post("/mock/callback", validatePaymentCallback, mockPaymentCallback);
 
 export default router;

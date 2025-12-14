@@ -4,6 +4,7 @@ import { connectDB } from "./config/db.js";
 import { initScheduler } from "./utils/scheduler.js";
 import { testCloudinaryConfig } from "./utils/cloudinary.js";
 import { testEmailConfig } from "./utils/mailer.js";
+import { configurePayFast } from "./utils/payFastGateways.js";
 
 dotenv.config();
 
@@ -12,6 +13,9 @@ const PORT = process.env.PORT || 3000;
 const start = async () => {
   // Connect to database
   await connectDB();
+
+  // Configure PayFast
+  await configurePayFast(app);
 
   // Test Cloudinary configuration
   testCloudinaryConfig();
@@ -43,29 +47,3 @@ app.get("/", (req, res) => {
     version: "1.0.0"
   });
 });
-
-// import dotenv from "dotenv";
-// import app from "./app.js";
-// import { connectDB } from "./config/db.js";
-
-// dotenv.config();
-
-// const PORT = process.env.PORT || 3000;
-
-// const start = async () => {
-//   await connectDB();
-//   app.listen(PORT, () => {
-//     console.log(`API running on http://localhost:${PORT}`);
-//     console.log("MONGODB URI:", process.env.MONGODB_URI);
-
-//   });
-// };
-
-// start().catch((error) => {
-//   console.error("Failed to start server", error);
-//   process.exit(1);
-// });
-
-// app.get("/", (req, res) => {
-//   res.send("Server is running");
-// });

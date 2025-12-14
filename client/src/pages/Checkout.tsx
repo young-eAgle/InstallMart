@@ -285,60 +285,7 @@ const Checkout = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Payment Method</Label>
-                    <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="safepay">SafePay (JazzCash, EasyPaisa, Bank Transfer, Credit Card)</SelectItem>
-                        <SelectItem value="mock">Mock Payment (Testing Only)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="payment-reference">Transaction ID / Payment Reference *</Label>
-                    <div className="relative">
-                      <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="payment-reference"
-                        className="pl-10"
-                        placeholder="e.g. TXN123456"
-                        value={paymentReference}
-                        onChange={(e) => setPaymentReference(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Enter the reference / transaction ID you received after sending the payment.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="payment-proof">Payment Proof URL (optional)</Label>
-                    <div className="relative">
-                      <FileBadge2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="payment-proof"
-                        className="pl-10"
-                        placeholder="https://drive.google.com/receipt..."
-                        value={paymentProofUrl}
-                        onChange={(e) => setPaymentProofUrl(e.target.value)}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Paste a link to your receipt screenshot or uploaded proof if available.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
             <div className="lg:col-span-1">

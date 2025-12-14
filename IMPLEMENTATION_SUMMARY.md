@@ -81,7 +81,7 @@ This document provides a comprehensive overview of the features implemented in t
 - **Authentication**: JWT with bcrypt
 - **File Storage**: Cloudinary
 - **Email Service**: Nodemailer
-- **Payment Gateways**: JazzCash, EasyPaisa, SafePay
+- **Payment Gateways**: PayFast (primary), Mock (testing)
 - **State Management**: React Context API
 - **UI Components**: Shadcn UI
 
@@ -93,13 +93,13 @@ This document provides a comprehensive overview of the features implemented in t
 - Added document verification status tracking
 
 ### Payment Gateway Integration
+- Replaced SafePay with PayFast as the primary payment gateway
 - Enhanced payment controller with comprehensive logging and error handling
 - Added security middleware for payment requests
-- Implemented callback validation for all payment gateways
+- Implemented callback validation for PayFast payment gateway
 - Created detailed testing procedures for payment flows
 - Added environment configuration guidance for production deployment
-- **Integrated SafePay as a third payment option**
-- **Fixed SafePay SDK import issue**
+
 
 ### Dashboard Improvements
 - Enhanced installment data display with detailed payment information

@@ -19,7 +19,7 @@ export const paymentSecurity = async (req, res, next) => {
     }
 
     // Validate payment method
-    const validPaymentMethods = ['safepay', 'mock'];
+    const validPaymentMethods = ['safepay', 'payfast', 'mock'];
     if (paymentMethod && !validPaymentMethods.includes(paymentMethod)) {
       return res.status(400).json({ message: "Invalid payment method" });
     }

@@ -48,7 +48,7 @@ export const MegaMenu = () => {
         <NavigationMenuItem>
           <NavigationMenuTrigger className="h-10 px-4 bg-primary text-primary-foreground hover:bg-primary/90">
             <Grid3x3 className="h-4 w-4 mr-2" />
-            All Departments
+            All Categories
           </NavigationMenuTrigger>
           <NavigationMenuContent>
             <div className="grid grid-cols-[250px_1fr] w-[900px] p-0">

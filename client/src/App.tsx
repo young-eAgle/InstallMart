@@ -32,6 +32,7 @@ import PaymentCallback from "./pages/PaymentCallback";
 import PaymentCenter from "./pages/PaymentCenter";
 import OrderSuccess from "./pages/OrderSuccess";
 import GuestOrderTracking from "./pages/GuestOrderTracking";
+import PayFastPayment from "./pages/PayFastPayment";
 import { FullscreenTakeover } from "@/components/SplashScreen";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,7 @@ const App = () => (
                 <Route path="/payments" element={<PaymentCenter />} />
                 <Route path="/order-success" element={<OrderSuccess />} />
                 <Route path="/track-order" element={<GuestOrderTracking />} />
+                <Route path="/payfast-payment" element={<PayFastPayment />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

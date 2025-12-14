@@ -29,7 +29,7 @@ export interface AuthUser {
 
 export interface OrderItem extends CartItem {}
 
-export type PaymentMethod = "safepay" | "mock";
+export type PaymentMethod = "safepay" | "payfast" | "mock";
 export type PaymentStatus = "pending" | "verified" | "rejected";
 
 export interface Installment {

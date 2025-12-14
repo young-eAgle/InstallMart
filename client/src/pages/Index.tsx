@@ -146,7 +146,7 @@ const Index = () => {
                 <div>
                   <h3 className="font-semibold mb-1">Free Delivery</h3>
                   <p className="text-sm text-muted-foreground">
-                    On orders above Rs. 5,000
+                    Easy Installments Available
                   </p>
                 </div>
               </CardContent>
@@ -160,7 +160,7 @@ const Index = () => {
                 <div>
                   <h3 className="font-semibold mb-1">Easy Installments</h3>
                   <p className="text-sm text-muted-foreground">
-                    6, 12, or 18 months plans
+                    3, 6, or 12 months plans
                   </p>
                 </div>
               </CardContent>

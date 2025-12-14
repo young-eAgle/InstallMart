@@ -31,7 +31,7 @@ export const PaymentButton = ({
   const { token } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [paymentMethod] = useState<"safepay" | "mock">("safepay");
+  const [paymentMethod, setPaymentMethod] = useState<"safepay" | "payfast" | "mock">("payfast");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePayment = async () => {
@@ -65,6 +65,18 @@ export const PaymentButton = ({
         else if (paymentMethod === "safepay") {
           // Redirect to SafePay checkout page
           window.location.href = response.paymentUrl;
+        }
+        // For GoPay Fast, redirect to the payment URL from the API response
+        else if (paymentMethod === "payfast") { 
+          // GoPay Fast returns a direct payment URL
+          const url = `${window.location.origin}/payfast-payment?paymentUrl=${encodeURIComponent(response.paymentUrl)}&orderId=${order.id}&transactionId=${response.transactionId}`;
+          
+          // Open in a new tab
+          window.open(url, '_blank', 'noopener,noreferrer');
+
+          // Close the dialog and stop processing in current tab
+          setIsProcessing(false);
+          setOpen(false);
         }
       }
     } catch (error) {
@@ -102,11 +114,11 @@ export const PaymentButton = ({
         <div className="space-y-6 py-4">
           <div className="flex items-center space-x-3 border rounded-lg p-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <span className="text-purple-600 font-bold text-xs">SP</span>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span className="text-blue-600 font-bold text-xs">PF</span>
               </div>
               <div>
-                <p className="font-medium">SafePay</p>
+                <p className="font-medium">PayFast</p>
                 <p className="text-xs text-muted-foreground">
                   Pay with JazzCash, EasyPaisa, Bank Transfer, or Credit Card
                 </p>
@@ -121,7 +133,7 @@ export const PaymentButton = ({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Payment Method:</span>
-              <span className="font-medium capitalize">SafePay</span>
+              <span className="font-medium capitalize">PayFast</span>
             </div>
           </div>
 
@@ -145,8 +157,8 @@ export const PaymentButton = ({
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            You will be redirected to SafePay to complete your payment securely.
-            SafePay supports JazzCash, EasyPaisa, Bank Transfers, and Credit Cards.
+            You will be redirected to PayFast to complete your payment securely.
+            PayFast supports JazzCash, EasyPaisa, Bank Transfers, and Credit Cards.
           </p>
         </div>
       </DialogContent>

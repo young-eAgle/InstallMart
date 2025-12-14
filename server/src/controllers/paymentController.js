@@ -2,6 +2,7 @@ import { Order } from "../models/Order.js";
 import { User } from "../models/User.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { createSafePayPayment, verifySafePayPayment } from "../utils/paymentGateways.js";
+import { createGoPayFastPayment, verifyGoPayFastPayment, configureGoPayFast } from "../utils/gopayFastGateway.js";
 import { sendEmail } from "../utils/mailer.js";
 
 // Mock payment configuration
@@ -39,7 +40,7 @@ export const initializePayment = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Order ID and payment method are required" });
   }
 
-  if (!['safepay', 'mock'].includes(paymentMethod)) {
+  if (!['safepay', 'payfast', 'mock'].includes(paymentMethod)) {
     logPaymentEvent("VALIDATION_ERROR", { 
       userId: req.user.id, 
       error: "Invalid payment method", 
@@ -133,7 +134,8 @@ export const initializePayment = asyncHandler(async (req, res) => {
     orderId: order.id,
     amount,
     customerEmail: order.user.email,
-    customerMobile: order.phone,
+    // Use order phone if available, otherwise use user phone
+    customerMobile: order.phone || order.user.phone || order.user.contactNumber,
     description,
   };
 
@@ -240,8 +242,20 @@ export const initializePayment = asyncHandler(async (req, res) => {
       amount 
     });
     
-    // Since we're only supporting SafePay now, directly call the SafePay payment creation
-    paymentResponse = await createSafePayPayment(paymentData);
+    // Handle different payment gateways
+    if (paymentMethod === "safepay") {
+      paymentResponse = await createSafePayPayment(paymentData);
+    } else if (paymentMethod === "payfast") {
+      // GoPay Fast requires specific data structure
+      paymentResponse = await createGoPayFastPayment({
+        order_id: order.id,
+        user_id: req.user.id,
+        user_mobile_number: paymentData.customerMobile,
+        amount: paymentData.amount,
+        product_name: 'InstallMart Order',
+        product_description: paymentData.description
+      });
+    }
     
     logPaymentEvent("REAL_PAYMENT_CREATED", { 
       userId: req.user.id, 
@@ -401,6 +415,137 @@ export const safePayCallback = asyncHandler(async (req, res) => {
     return res.status(400).json({
       success: false,
       message: "Payment failed",
+    });
+  }
+});
+
+// GoPay Fast callback handler
+export const payFastCallback = asyncHandler(async (req, res) => {
+  logPaymentEvent("GOPAYFAST_CALLBACK_RECEIVED", { 
+    method: req.method,
+    transaction_id: req.body?.transaction_id || req.query?.transaction_id,
+    order_id: req.body?.order_id || req.query?.order_id,
+    status: req.body?.status || req.query?.status
+  });
+
+  try {
+    // GoPay Fast sends callback data in query params or body
+    const callbackData = req.method === 'POST' ? req.body : req.query;
+    
+    const verificationResult = await verifyGoPayFastPayment(callbackData);
+
+    if (!verificationResult.success) {
+      logPaymentEvent("GOPAYFAST_VERIFICATION_FAILED", { 
+        error: verificationResult.message,
+        transactionId: callbackData.transaction_id
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed",
+      });
+    }
+
+    const orderId = verificationResult.orderId;
+    
+    if (!orderId) {
+      logPaymentEvent("GOPAYFAST_MISSING_ORDER_ID", { 
+        transactionId: verificationResult.transactionId
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: "Missing order ID in payment data",
+      });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      logPaymentEvent("GOPAYFAST_ORDER_NOT_FOUND", { 
+        orderId,
+        transactionId: verificationResult.transactionId
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Check if this payment was already processed (idempotency)
+    const existingInstallment = order.installments.find(
+      inst => inst.transactionId === verificationResult.transactionId
+    );
+
+    if (existingInstallment && existingInstallment.status === "paid") {
+      logPaymentEvent("GOPAYFAST_DUPLICATE_PAYMENT", { 
+        orderId,
+        transactionId: verificationResult.transactionId
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: "Payment already processed",
+      });
+    }
+
+    // Mark first pending installment as paid
+    const installment = order.installments.find(
+      (inst) => inst.status === "pending",
+    );
+    if (installment) {
+      installment.status = "paid";
+      installment.paidAt = new Date();
+      installment.transactionId = verificationResult.transactionId;
+      installment.paymentMethod = "payfast";
+
+      // Update next due date
+      const nextPending = order.installments.find(
+        (inst) => inst.status === "pending",
+      );
+      order.nextDueDate = nextPending ? nextPending.dueDate : null;
+
+      await order.save();
+      
+      logPaymentEvent("GOPAYFAST_PAYMENT_SUCCESS", { 
+        orderId, 
+        transactionId: verificationResult.transactionId,
+        amount: verificationResult.amount 
+      });
+
+      // Send confirmation email
+      try {
+        const user = await User.findById(order.user);
+        if (user) {
+          await sendEmail(user.email, "paymentConfirmation", {
+            user,
+            installment: installment.toJSON(),
+            order: order.toJSON(),
+          });
+        }
+      } catch (emailError) {
+        console.error("Failed to send confirmation email:", emailError);
+        logPaymentEvent("EMAIL_SEND_ERROR", { 
+          orderId, 
+          error: emailError.message 
+        });
+      }
+    }
+
+    // Return 200 OK to acknowledge receipt of callback
+    return res.status(200).json({
+      success: true,
+      message: "Payment processed successfully",
+    });
+  } catch (error) {
+    console.error("GoPay Fast callback error:", error);
+    logPaymentEvent("GOPAYFAST_CALLBACK_ERROR", { 
+      error: error.message
+    });
+    
+    return res.status(400).json({
+      success: false,
+      message: "Callback processing error",
     });
   }
 });

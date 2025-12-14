@@ -369,16 +369,20 @@ export const paymentApi = {
   initialize: (
     payload: {
       orderId: string;
-      paymentMethod: "safepay" | "mock";
+      paymentMethod: "safepay" | "payfast" | "mock";
       installmentId?: string;
     },
     token: string,
   ) =>
     request<{
       success: boolean;
-      paymentUrl: string;
-      formData: Record<string, string>;
-      transactionRef: string;
+      paymentUrl?: string;
+      formData?: Record<string, string>;
+      transactionRef?: string;
+      paymentData?: Record<string, any>;
+      merchant_id?: string;
+      merchant_key?: string;
+      env?: string;
       orderId: string;
       installmentId?: string;
       redirectUrl?: string;
